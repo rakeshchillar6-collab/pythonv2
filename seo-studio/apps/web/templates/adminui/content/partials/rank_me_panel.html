@@ -1,0 +1,48 @@
+<!-- templates/adminui/content/partials/rank_me_panel.html -->
+<div id="rank-me-panel">
+    <h3 class="font-semibold mb-2">امتیاز سئو (Rank-Me)</h3>
+
+    <div class="text-center mb-4">
+        <div class="relative inline-block">
+            <svg class="w-24 h-24">
+                <circle class="text-gray-200" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="48" cy="48"/>
+                <circle
+                    class="text-blue-500"
+                    stroke-width="8"
+                    stroke-linecap="round"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r="40"
+                    cx="48"
+                    cy="48"
+                    style="stroke-dasharray: {{ 251.2 }}; stroke-dashoffset: calc(251.2 - (251.2 * {{ evaluation.score }}) / 100);"
+                    transform="rotate(-90 48 48)"
+                />
+            </svg>
+            <span class="absolute text-2xl font-bold top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                {{ evaluation.score }}
+            </span>
+        </div>
+    </div>
+
+    {% if evaluation.error %}
+        <p class="text-red-500 text-sm">{{ evaluation.error }}</p>
+    {% else %}
+        <ul class="space-y-2 text-sm">
+            {% for check in evaluation.checks %}
+                <li class="flex items-start">
+                    <span class="mr-2 pt-1">
+                        {% if check.is_ok %}
+                            <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        {% elif check.severity == 'critical' %}
+                             <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                        {% else %}
+                            <svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-8a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                        {% endif %}
+                    </span>
+                    <p class="text-gray-700">{{ check.message }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</div>

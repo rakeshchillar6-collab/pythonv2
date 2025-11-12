@@ -1,0 +1,35 @@
+<!-- templates/adminui/content/partials/faq_blocks.html -->
+<div id="faq-blocks-container">
+    <h3 class="font-semibold mb-2">بلوک‌های پرسش و پاسخ (FAQ)</h3>
+    <div id="faq-list" class="space-y-2 mb-4">
+        {% for faq in post.faq_blocks.all %}
+            <div class="p-2 border rounded-md bg-gray-50">
+                <p class="font-bold text-sm">{{ faq.question }}</p>
+                <p class="text-sm text-gray-600">{{ faq.answer_html|safe }}</p>
+            </div>
+        {% empty %}
+            <p class="text-gray-500 text-sm">هنوز هیچ پرسش و پاسخی اضافه نشده است.</p>
+        {% endfor %}
+    </div>
+    <form
+        hx-post="{% url 'adminui:add_faq_block' %}"
+        hx-target="#faq-blocks-container"
+        hx-swap="outerHTML"
+    >
+        {% csrf_token %}
+        <input type="hidden" name="post_id" value="{{ post.id }}">
+        <div class="space-y-2 p-2 border rounded-md">
+            {{ form.question.label_tag }}
+            {{ form.question }}
+            {{ form.answer_html.label_tag }}
+            {{ form.answer_html }}
+            <div class="flex items-center">
+                {{ form.has_schema }}
+                <label for="{{ form.has_schema.id_for_label }}" class="mr-2 text-sm">ایجاد Schema</label>
+            </div>
+            <button type="submit" class="bg-gray-200 px-3 py-1 rounded-md text-sm hover:bg-gray-300">
+                افزودن FAQ
+            </button>
+        </div>
+    </form>
+</div>

@@ -16,6 +16,19 @@ urlpatterns = [
     path('content/categories/<uuid:pk>/update/', views.category_update, name='category_update'),
     path('content/categories/<uuid:pk>/delete/', views.category_delete, name='category_delete'),
 
+    # Post CRUD
+    path('content/posts/', views.post_list, name='post_list'),
+    path('content/posts/new/', views.post_create, name='post_create'),
+    path('content/posts/<uuid:pk>/edit/', views.post_edit, name='post_edit'),
+    # Editor Partials
+    path('content/posts/<uuid:pk>/partials/save/', views.save_post_partial, name='save_post_partial'),
+    path('content/posts/<uuid:pk>/partials/rank-me/', views.rank_me_partial, name='rank_me_partial'),
+    path('content/posts/<uuid:pk>/partials/competitors/', views.competitors_partial, name='competitors_partial'),
+    path('content/posts/competitors/add/', views.add_competitor, name='add_competitor'),
+    # Block Partials
+    path('content/posts/<uuid:pk>/blocks/faq/', views.faq_block_list, name='faq_block_list'),
+    path('content/posts/blocks/faq/add/', views.add_faq_block, name='add_faq_block'),
+
     # Vector Search Management
     path('vector/corpora/', views.corpus_list, name='corpus_list'),
     # Add more vector search URLs here later

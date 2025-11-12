@@ -1,0 +1,42 @@
+<!-- templates/adminui/content/partials/competitors_panel.html -->
+<div id="competitors-panel">
+    <h3 class="font-semibold mb-2">رقبا</h3>
+    <div
+        id="competitor-list"
+        class="space-y-2 mb-4"
+        hx-target="this"
+        hx-swap="outerHTML"
+    >
+        <ul class="text-sm">
+            {% for competitor in post.competitors.all %}
+                <li class="p-2 border rounded-md">
+                    <p class="truncate text-gray-600" title="{{ competitor.url }}">{{ competitor.url }}</p>
+                    <p class="font-semibold">{{ competitor.word_count }} کلمه</p>
+                </li>
+            {% empty %}
+                <p class="text-gray-500 text-sm">هیچ رقیبی اضافه نشده است.</p>
+            {% endfor %}
+        </ul>
+    </div>
+    <form
+        hx-post="{% url 'adminui:add_competitor' %}"
+        hx-target="#competitor-list"
+        hx-swap="outerHTML"
+        hx-indicator="#competitor-spinner"
+        class="flex space-x-2 rtl:space-x-reverse"
+    >
+        {% csrf_token %}
+        <input type="hidden" name="post_id" value="{{ post.id }}">
+        <input
+            type="url"
+            name="url"
+            class="flex-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
+            placeholder="https://example.com/competitor-post"
+            required
+        >
+        <button type="submit" class="bg-gray-200 px-3 py-1 rounded-md text-sm hover:bg-gray-300 flex items-center">
+            <span id="competitor-spinner" class="htmx-indicator animate-spin h-4 w-4 border-b-2 border-gray-900 mr-2"></span>
+            افزودن
+        </button>
+    </form>
+</div>

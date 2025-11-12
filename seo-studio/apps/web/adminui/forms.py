@@ -21,3 +21,25 @@ class CorpusForm(StyledModelForm):
     class Meta:
         model = Corpus
         fields = ['site', 'name', 'description', 'lang', 'content_type', 'source', 'is_active']
+
+class PostForm(StyledModelForm):
+    class Meta:
+        model = Post
+        fields = [
+            'site', 'type', 'status', 'author', 'title', 'title_en', 'slug',
+            'body_html', 'summary', 'seo_title', 'seo_description', 'main_keyword',
+            'secondary_keywords', 'category', 'tags', 'canonical_url', 'robots_mode',
+        ]
+        widgets = {
+            'body_html': forms.Textarea(attrs={'rows': 20}),
+            'summary': forms.Textarea(attrs={'rows': 3}),
+            'secondary_keywords': forms.TextInput(attrs={'placeholder': 'کلمات را با کاما جدا کنید'}),
+        }
+
+class FaqBlockForm(StyledModelForm):
+    class Meta:
+        model = FaqBlock
+        fields = ['question', 'answer_html', 'has_schema']
+        widgets = {
+            'answer_html': forms.Textarea(attrs={'rows': 4}),
+        }

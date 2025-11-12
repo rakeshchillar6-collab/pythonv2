@@ -1,0 +1,57 @@
+<!-- templates/adminui/content/post_list.html -->
+{% extends "adminui/base.html" %}
+
+{% block title %}مدیریت پست‌ها{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">مدیریت پست‌ها</h1>
+        <div x-data="{ open: false }" class="relative">
+            <button @click="open = !open" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center">
+                ایجاد پست جدید
+                <svg class="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+            </button>
+            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20" x-cloak>
+                <a href="{% url 'adminui:post_create' %}?type=article" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">مقاله</a>
+                <a href="{% url 'adminui:post_create' %}?type=product" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">محصول</a>
+                <a href="{% url 'adminui:post_create' %}?type=page" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">صفحه</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <!-- Filters will go here -->
+        <table class="w-full text-right">
+            <thead>
+                <tr class="border-b">
+                    <th class="p-4">عنوان</th>
+                    <th class="p-4">نوع</th>
+                    <th class="p-4">وضعیت</th>
+                    <th class="p-4">نویسنده</th>
+                    <th class="p-4">آخرین بروزرسانی</th>
+                    <th class="p-4">عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for post in posts %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-4 font-medium">{{ post.title }}</td>
+                    <td class="p-4 text-gray-600">{{ post.get_type_display }}</td>
+                    <td class="p-4">{{ post.get_status_display }}</td>
+                    <td class="p-4">{{ post.author.email|default:"-" }}</td>
+                    <td class="p-4">{{ post.updated_at|date:"Y-m-d" }}</td>
+                    <td class="p-4">
+                        <a href="{% url 'adminui:post_edit' post.id %}" class="text-blue-500 hover:underline">ویرایش</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-4 text-center text-gray-500">هیچ پستی یافت نشد.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

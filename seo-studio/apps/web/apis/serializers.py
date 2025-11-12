@@ -74,3 +74,19 @@ class SearchResultChunkSerializer(serializers.ModelSerializer):
     class Meta:
         model = TextChunk
         fields = ['document_id', 'document_title', 'id', 'score', 'snippet', 'document_metadata']
+
+# --- Public API Serializers (for Next.js) ---
+
+class PublicPostSerializer(serializers.ModelSerializer):
+    """A read-only serializer for public post data."""
+    author_name = serializers.CharField(source='author.get_full_name', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    tags = serializers.SlugRelatedField(many=True, read_only=True, slug_field='name')
+
+    class Meta:
+        model = Post
+        fields = [
+            'id', 'title', 'slug', 'body_html', 'summary',
+            'seo_title', 'seo_description', 'published_at',
+            'read_time_min', 'author_name', 'category_name', 'tags'
+        ]

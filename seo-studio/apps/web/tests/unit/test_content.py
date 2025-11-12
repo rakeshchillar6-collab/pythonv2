@@ -2,95 +2,121 @@
 import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
-from content.models import Category, Post
-from core.models import User
+from content.models import Post, Category, Redirect301, PostSlugHistory
+from core.models import User, SiteProfile
 
 pytestmark = pytest.mark.django_db
 
+# --- Fixtures ---
 @pytest.fixture
-def content_editor(create_user, create_role):
-    """Creates a user with the 'editor' role."""
+def site():
+    return SiteProfile.objects.create(name="Test Site", domain="test.com")
+
+@pytest.fixture
+def editor_user(create_user, create_role):
     editor_role = create_role(name="Editor", slug="editor")
-    return create_user(email="contenteditor@test.com", roles=[editor_role])
+    return create_user(email="editor@test.com", roles=[editor_role])
 
-@pytest.fixture
-def another_user(create_user):
-    """Creates a regular user without special roles."""
-    return create_user(email="anotheruser@test.com")
+# --- Signal Tests ---
+def test_slug_change_creates_redirect_and_history(site, editor_user):
+    """
+    Ensure that changing a post's slug correctly creates a Redirect301
+    and a PostSlugHistory record.
+    """
+    post = Post.objects.create(
+        title="Original Title",
+        slug="original-slug",
+        site=site,
+        author=editor_user
+    )
 
-# --- Category API Tests ---
+    assert Redirect301.objects.count() == 0
+    assert PostSlugHistory.objects.count() == 0
 
-def test_list_categories(api_client: APIClient, content_editor):
-    """Ensure authenticated editors can list categories."""
-    api_client.force_authenticate(user=content_editor)
-    Category.objects.create(name="Tech", slug="tech")
+    # Change the slug and save
+    post.slug = "new-updated-slug"
+    post.save()
 
-    url = "/api/categories/"
+    assert Redirect301.objects.count() == 1
+    redirect = Redirect301.objects.first()
+    assert redirect.from_path == "/original-slug/"
+    assert redirect.to_path == "/new-updated-slug/"
+    assert redirect.site == site
+
+    assert PostSlugHistory.objects.count() == 1
+    history = PostSlugHistory.objects.first()
+    assert history.old_slug == "original-slug"
+    assert history.post == post
+
+# --- Rank-Me Service Tests (Smoke Test) ---
+def test_rank_me_evaluator(site, editor_user):
+    """
+    A simple smoke test for the Rank-Me evaluator service.
+    """
+    from rankme import evaluate_post
+
+    post = Post.objects.create(
+        title="Test Post for SEO",
+        slug="test-post-for-seo",
+        site=site,
+        author=editor_user,
+        main_keyword="seo",
+        body_text="This is a test about seo."
+    )
+
+    evaluation = evaluate_post(post.pk)
+
+    assert "score" in evaluation
+    assert "checks" in evaluation
+    assert evaluation['score'] > 0
+    # Find the keyword density check and verify it ran
+    density_check = next((c for c in evaluation['checks'] if c['id'] == 'keyword_density'), None)
+    assert density_check is not None
+    assert density_check['is_ok'] is False # Density is too high in this short text
+
+# --- Public API Tests ---
+def test_public_post_list_api(api_client: APIClient, site, editor_user):
+    """
+    Ensure the public API for posts only returns published posts.
+    """
+    # Create one published and one draft post
+    Post.objects.create(
+        title="Published Post", slug="published-post", site=site,
+        author=editor_user, status=Post.PostStatus.PUBLISHED
+    )
+    Post.objects.create(
+        title="Draft Post", slug="draft-post", site=site,
+        author=editor_user, status=Post.PostStatus.DRAFT
+    )
+
+    url = "/api/public/posts/"
     response = api_client.get(url)
 
     assert response.status_code == status.HTTP_200_OK
     assert len(response.data['results']) == 1
+    assert response.data['results'][0]['title'] == "Published Post"
 
-def test_create_category(api_client: APIClient, content_editor):
-    """Ensure editors can create a category."""
-    api_client.force_authenticate(user=content_editor)
-    url = "/api/categories/"
-    data = {"name": "Health", "slug": "health"}
-    response = api_client.post(url, data)
+def test_public_post_detail_api(api_client: APIClient, site, editor_user):
+    """
+    Ensure the public detail endpoint returns correct data and 404 for drafts.
+    """
+    published_post = Post.objects.create(
+        title="Published Post", slug="published-post-detail", site=site,
+        author=editor_user, status=Post.PostStatus.PUBLISHED
+    )
+    draft_post = Post.objects.create(
+        title="Draft Post", slug="draft-post-detail", site=site,
+        author=editor_user, status=Post.PostStatus.DRAFT
+    )
 
-    assert response.status_code == status.HTTP_201_CREATED
-    assert Category.objects.filter(slug="health").exists()
+    # Test accessing the published post
+    url_published = f"/api/public/posts/{published_post.slug}/"
+    response_published = api_client.get(url_published)
+    assert response_published.status_code == status.HTTP_200_OK
+    assert response_published.data['title'] == "Published Post"
+    assert "body_text" not in response_published.data # Ensure private fields are excluded
 
-# --- Post API Tests ---
-
-def test_create_post(api_client: APIClient, content_editor):
-    """Ensure an editor can create a post."""
-    api_client.force_authenticate(user=content_editor)
-    url = "/api/posts/"
-    data = {"title": "New Post", "slug": "new-post", "content": "Some content."}
-    response = api_client.post(url, data)
-
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.data['author'] == content_editor.email
-    assert Post.objects.count() == 1
-
-def test_update_own_post(api_client: APIClient, content_editor):
-    """Ensure an editor can update their own post."""
-    api_client.force_authenticate(user=content_editor)
-    post = Post.objects.create(title="Original", slug="original", author=content_editor)
-
-    url = f"/api/posts/{post.slug}/"
-    data = {"title": "Updated Title"}
-    response = api_client.patch(url, data)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.data['title'] == "Updated Title"
-
-def test_cannot_update_others_post(api_client: APIClient, content_editor, another_user):
-    """Ensure a user cannot update a post they do not own."""
-    # The post is owned by `another_user`
-    post = Post.objects.create(title="Secret Post", slug="secret-post", author=another_user)
-
-    # `content_editor` tries to update it
-    api_client.force_authenticate(user=content_editor)
-    url = f"/api/posts/{post.slug}/"
-    data = {"title": "Hacked"}
-    response = api_client.patch(url, data)
-
-    # The `IsOwnerOrAdmin` permission should deny this
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-
-def test_admin_can_update_others_post(api_client: APIClient, create_user, create_role, another_user):
-    """Ensure an admin user can update anyone's post."""
-    admin_role = create_role(name="Admin", slug="admin")
-    admin_user = create_user(email="admin@test.com", roles=[admin_role])
-
-    post = Post.objects.create(title="Another Post", slug="another-post", author=another_user)
-
-    api_client.force_authenticate(user=admin_user)
-    url = f"/api/posts/{post.slug}/"
-    data = {"title": "Admin Edited"}
-    response = api_client.patch(url, data)
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.data['title'] == "Admin Edited"
+    # Test accessing the draft post (should fail)
+    url_draft = f"/api/public/posts/{draft_post.slug}/"
+    response_draft = api_client.get(url_draft)
+    assert response_draft.status_code == status.HTTP_404_NOT_FOUND

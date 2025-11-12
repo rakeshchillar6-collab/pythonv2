@@ -1,0 +1,168 @@
+<!-- templates/adminui/content/editor_layout.html -->
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-g">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ویرایش: {{ post.title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+</head>
+<body class="bg-gray-100" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <form
+        id="post-editor-form"
+        hx-post="{% url 'adminui:save_post_partial' post.pk %}"
+        hx-trigger="autosave"
+        hx-target="#save-status"
+        hx-swap="innerHTML"
+    >
+        {% csrf_token %}
+        <div class="flex flex-col h-screen">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-md p-2 flex justify-between items-center z-10">
+                <div><a href="{% url 'adminui:post_list' %}" class="text-blue-500 hover:underline">بازگشت</a></div>
+                <div class="flex-1 px-4">
+                    <input type="text" name="title" value="{{ form.title.value|default:'' }}" class="w-full text-lg font-bold border-transparent focus:border-gray-300 focus:ring-0">
+                </div>
+                <div class="flex items-center space-x-4 rtl:space-x-reverse">
+                    <div id="user-presence-list" class="flex space-x-2 rtl:space-x-reverse items-center">
+                        <!-- Presence indicators will be added here by WebSocket -->
+                    </div>
+                    <span id="save-status" class="text-sm text-gray-500 transition-opacity"></span>
+                    <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded-lg">انتشار</button>
+                </div>
+            </header>
+
+            <!-- Main Editor Area -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Left Panel (Meta Bar) -->
+                <aside class="w-1/4 bg-white p-4 overflow-y-auto border-l">
+                     <!-- ... Meta form fields ... -->
+                </aside>
+
+                <!-- Center Panel (Editor) -->
+                <main class="flex-1 p-6 overflow-y-auto" x-data="{ activeTab: 'editor' }">
+                    <div class="border-b border-gray-200">
+                        <nav class="-mb-px flex space-x-4 rtl:space-x-reverse" aria-label="Tabs">
+                            <button @click="activeTab = 'editor'" :class="{ 'border-blue-500 text-blue-600': activeTab === 'editor', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'editor' }" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">ویرایشگر</button>
+                            <button @click="activeTab = 'blocks'" :class="{ 'border-blue-500 text-blue-600': activeTab === 'blocks', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'blocks' }" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">بلوک‌ها</button>
+                        </nav>
+                    </div>
+
+                    <div x-show="activeTab === 'editor'" class="max-w-4xl mx-auto h-full mt-6">
+                        <textarea id="tinymce-editor" name="body_html" class="w-full h-full p-4 border rounded-md">
+                            {{ form.body_html.value|default:'' }}
+                        </textarea>
+                    </div>
+
+                    <div x-show="activeTab === 'blocks'" class="max-w-4xl mx-auto mt-6"
+                         hx-get="{% url 'adminui:faq_block_list' post.pk %}"
+                         hx-trigger="load"
+                         hx-swap="innerHTML"
+                    >
+                        <!-- FAQ blocks will be loaded here -->
+                        <p class="text-gray-500">در حال بارگذاری بلوک‌ها...</p>
+                    </div>
+                </main>
+
+                <!-- Right Panel (Tools) -->
+                <aside class="w-1/4 bg-white p-4 overflow-y-auto border-r space-y-6">
+                    <div
+                        id="rank-me-container"
+                        hx-get="{% url 'adminui:rank_me_partial' post.pk %}"
+                        hx-trigger="load, reloadRankMe from:body"
+                        hx-swap="innerHTML"
+                    >
+                        <p class="text-gray-500">پنل Rank-Me در حال بارگذاری...</p>
+                    </div>
+
+                    <hr>
+
+                    <div
+                        id="competitors-container"
+                        hx-get="{% url 'adminui:competitors_partial' post.pk %}"
+                        hx-trigger="load"
+                        hx-swap="innerHTML"
+                    >
+                        <p class="text-gray-500">پنل رقبا در حال بارگذاری...</p>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </form>
+    <script>
+        // Initialize TinyMCE
+        tinymce.init({
+            selector: '#tinymce-editor',
+            plugins: 'autolink lists link image charmap preview anchor pagebreak searchreplace wordcount visualblocks code fullscreen insertdatetime media table help',
+            toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code',
+            directionality: 'rtl',
+            height: "100%",
+            setup: function (editor) {
+                // This function syncs the editor's content with the underlying textarea
+                // right before HTMX makes a request.
+                editor.on('change', function () {
+                    editor.save(); // Sync content to textarea
+                });
+            }
+        });
+
+        // Custom event for autosave
+        setInterval(function() {
+            var event = new Event('autosave');
+            document.getElementById('post-editor-form').dispatchEvent(event);
+        }, 30000); // Trigger every 30 seconds
+
+        // Sync content before any HTMX POST request from the form
+        document.getElementById('post-editor-form').addEventListener('htmx:configRequest', function(evt) {
+            if (evt.detail.verb === 'post') {
+                tinymce.get('tinymce-editor').save();
+            }
+        });
+
+        // --- WebSocket for Collaborative Editing ---
+        const postId = "{{ post.id }}";
+        const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+        const wsPath = `${wsScheme}://${window.location.host}/ws/editor/${postId}/`;
+
+        const editorSocket = new WebSocket(wsPath);
+
+        editorSocket.onopen = function(e) {
+            console.log("WebSocket connection established.");
+        };
+
+        editorSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log("Received WS data:", data);
+
+            const userList = document.getElementById('user-presence-list');
+            if (!userList) return;
+
+            if (data.type === 'user_join') {
+                // Add user to presence list if not already there
+                if (!document.getElementById(`presence-${data.user}`)) {
+                    const userEl = document.createElement('div');
+                    userEl.id = `presence-${data.user}`;
+                    userEl.textContent = data.user;
+                    userEl.className = 'text-xs bg-gray-200 px-2 py-1 rounded';
+                    userList.appendChild(userEl);
+                }
+            } else if (data.type === 'user_leave') {
+                // Remove user from presence list
+                const userEl = document.getElementById(`presence-${data.user}`);
+                if (userEl) {
+                    userEl.remove();
+                }
+            }
+        };
+
+        editorSocket.onclose = function(e) {
+            console.error("WebSocket connection closed unexpectedly.");
+        };
+
+    </script>
+</body>
+</html>

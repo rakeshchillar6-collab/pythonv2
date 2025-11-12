@@ -20,7 +20,8 @@ router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'roles', RoleViewSet, basename='role')
 router.register(r'categories', CategoryViewSet, basename='category')
-router.register(r'posts', PostViewSet, basename='post')
+router.register(r'posts', PostViewSet, basename='post') # Internal CRUD
+router.register(r'public/posts', PublicPostViewSet, basename='public-post') # Public API
 router.register(r'vector', VectorSearchViewSet, basename='vector')
 
 app_name = 'apis'

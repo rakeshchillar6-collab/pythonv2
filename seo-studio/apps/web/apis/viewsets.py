@@ -152,7 +152,24 @@ class VectorSearchViewSet(viewsets.ViewSet):
 
         return Response({'status': 'queued', 'message': message}, status=status.HTTP_202_ACCEPTED)
 
-# Health Check Views (remain the same)
+# ... (Health and Vector Search ViewSets remain the same) ...
+
+# --- Public Read-Only API for Frontend ---
+
+class PublicPostViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    A read-only API endpoint for fetching published posts for the frontend.
+    This endpoint is publicly accessible.
+    """
+    queryset = Post.objects.filter(status=Post.PostStatus.PUBLISHED).order_by('-published_at')
+    serializer_class = PublicPostSerializer
+    permission_classes = [AllowAny]
+    lookup_field = 'slug'
+
+    # Add filtering for type, category, etc.
+    filterset_fields = ['type', 'category__slug', 'tags__slug']
+
+
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]
     def get(self, request: Request, *args, **kwargs) -> Response:

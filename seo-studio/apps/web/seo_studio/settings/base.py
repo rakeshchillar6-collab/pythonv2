@@ -28,6 +28,7 @@ CSRF_TRUSTED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS') # Same as CORS for panel
 
 # --- Application Definitions ---
 DJANGO_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -51,6 +52,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     'common.apps.CommonConfig',
     'core.apps.CoreConfig',
+    'editor.apps.EditorConfig',
     'integrations.apps.IntegrationsConfig',
     'content.apps.ContentConfig',
     'seo.apps.SeoConfig',
@@ -82,6 +84,16 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'seo_studio.urls'
 WSGI_APPLICATION = 'seo_studio.wsgi.application'
 ASGI_APPLICATION = 'seo_studio.asgi.application'
+
+# --- Channel Layers ---
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [env('REDIS_URL')],
+        },
+    },
+}
 
 # --- Templates ---
 TEMPLATES = [
@@ -170,6 +182,10 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_BEAT_SCHEDULE = {
+    'publish-scheduled-posts-every-minute': {
+        'task': 'content.tasks.publish_scheduled_posts',
+        'schedule': crontab(), # Run every minute
+    },
     'run-re-embedding-policy-hourly': {
         'task': 'vectorsearch.tasks.apply_reembedding_policy',
         'schedule': crontab(minute='0'), # Run every hour at minute 0
