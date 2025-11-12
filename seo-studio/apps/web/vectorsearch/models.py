@@ -1,37 +1,42 @@
 # vectorsearch/models.py
 from django.db import models
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
 from pgvector.django import VectorField, HNSWIndex
-
 from common.models import BaseModel
 
-class EmbeddedContent(BaseModel):
+class TextChunk(BaseModel):
     """
-    A model to store embeddings for various other models (generic relation).
+    Represents a chunk of text and its corresponding vector embedding.
+    This model is used for semantic search.
     """
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.UUIDField()
-    content_object = GenericForeignKey('content_type', 'object_id')
-
-    # The actual embedding vector
-    embedding = VectorField(dimensions=1536) # Example dimension for OpenAI's text-embedding-ada-002
-
-    source_text = models.TextField(help_text="The text that was embedded")
+    title = models.CharField(max_length=255, help_text="A descriptive title for the text chunk.")
+    body = models.TextField(help_text="The actual text content that is embedded.")
+    embedding = VectorField(
+        dimensions=1536,  # Example: OpenAI's text-embedding-ada-002
+        null=True,
+        blank=True,
+        help_text="The vector embedding of the text chunk."
+    )
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Additional metadata, e.g., source URL, document ID."
+    )
 
     class Meta:
+        verbose_name = "Text Chunk"
+        verbose_name_plural = "Text Chunks"
         indexes = [
-            # Using HNSW index for efficient similarity search
+            # Use HNSW index for efficient approximate nearest neighbor search.
+            # It's generally faster and more accurate for high-dimensional data
+            # compared to IVFFlat.
             HNSWIndex(
-                name='embedding_hnsw_index',
+                name='text_chunk_embedding_hnsw_index',
                 fields=['embedding'],
-                m=16,
-                ef_construction=64,
-                opclasses=['vector_l2_ops'],
+                m=16,              # Recommended range: 4-64
+                ef_construction=64, # Recommended range: > ef_search
+                opclasses=['vector_l2_ops'], # Use L2 distance for similarity
             )
         ]
-        # Ensure one embedding per content object
-        unique_together = ('content_type', 'object_id')
 
-    def __str__(self):
-        return f"Embedding for {self.content_object}"
+    def __str__(self) -> str:
+        return self.title

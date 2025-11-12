@@ -1,0 +1,15 @@
+<!-- templates/adminui/partials/system_health_partial.html -->
+<ul class="space-y-3">
+    {% for service, data in health_data.items %}
+    <li class="flex items-center justify-between">
+        <span class="text-gray-600 capitalize">{{ service|cut:"_" }}</span>
+        {% if data.status == "ok" %}
+            <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full">سالم</span>
+        {% elif data.status == "warn" %}
+            <span class="px-2 py-1 text-xs font-semibold text-yellow-800 bg-yellow-200 rounded-full">هشدار</span>
+        {% else %}
+            <span class="px-2 py-1 text-xs font-semibold text-red-800 bg-red-200 rounded-full" title="{{ data.details }}">خطا</span>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>

@@ -1,75 +1,89 @@
 # Installation Guide for SEO Studio
 
-This document provides instructions on how to set up and run the SEO Studio project locally using Docker.
+This document provides instructions on how to set up and run the SEO Studio project locally using Docker and a Makefile for convenience.
 
 ## Prerequisites
 
-- Docker
-- Docker Compose
+-   Docker
+-   Docker Compose
+-   `make` (optional, but recommended for easy command execution)
 
 ## Setup Steps
 
-1.  **Clone the Repository**
+### 1. Configure Environment Variables
 
-    ```bash
-    git clone <repository-url>
-    cd seo-studio
-    ```
+First, copy the example environment file to create your local development configuration.
 
-2.  **Configure Environment Variables**
+```bash
+cp infra/env/.env.example infra/env/.env.dev
+```
 
-    Copy the example environment file to create a local configuration file for development.
+The default values in `.env.dev` are suitable for local development and do not need to be changed.
 
-    ```bash
-    cp infra/env/.env.example infra/env/.env.dev
-    ```
+### 2. Build and Run Services
 
-    You can modify the values in `infra/env/.env.dev` if needed, but the defaults are suitable for local development.
+Use the provided `Makefile` to build and start all services in the background.
 
-3.  **Build and Run the Services**
+```bash
+make up
+```
 
-    Use Docker Compose to build the images and start all the services.
+This command will:
+-   Build the Docker images for the Django and Next.js applications.
+-   Start all services (`web`, `next`, `db`, `redis`, `worker`) in detached mode.
 
-    ```bash
-    docker-compose -f docker-compose.yml up --build -d
-    ```
-    This command will start the Django web server, Next.js frontend, PostgreSQL database, Redis, and a Celery worker.
+*Alternatively, without `make`, you can run:*
+`docker compose up --build -d`
 
-4.  **Apply Database Migrations**
+### 3. Apply Database Migrations
 
-    Once the containers are running, apply the Django database migrations to set up the database schema.
+Once the containers are running, apply the database migrations to set up the schema.
 
-    ```bash
-    docker-compose exec web python manage.py migrate
-    ```
+```bash
+make migrate
+```
 
-5.  **Create a Superuser**
+*Alternatively, without `make`:*
+`docker compose exec web python manage.py migrate`
 
-    To access the admin panel, you need to create a superuser account.
+### 4. Create a Superuser
 
-    ```bash
-    docker-compose exec web python manage.py createsuperuser
-    ```
-    Follow the prompts to set a username, email, and password.
+To access the admin panel, you need a superuser account.
 
-6.  **Seed Initial Data (Optional)**
+```bash
+make superuser
+```
 
-    To populate the database with some sample data, run the seed script.
+Follow the prompts to set an email and password.
 
-    ```bash
-    docker-compose exec web python manage.py seed
-    ```
+*Alternatively, without `make`:*
+`docker compose exec web python manage.py createsuperuser`
+
+### 5. Seed Initial Data (Recommended)
+
+To populate the application with sample data (users, roles, posts, categories), run the seed command.
+
+```bash
+make seed
+```
+
+This will create an `admin` and an `editor` user, along with sample content to explore.
+
+*Alternatively, without `make`:*
+`docker compose exec web python manage.py seed`
 
 ## Accessing the Applications
 
--   **Django API & Admin Panel**: [http://localhost:8000](http://localhost:8000)
 -   **Next.js Frontend**: [http://localhost:3000](http://localhost:3000)
--   **API Documentation (Swagger/Redoc)**: [http://localhost:8000/api/schema/](http://localhost:8000/api/schema/)
+-   **HTMX Admin Panel**: [http://localhost:8000/adminui/](http://localhost:8000/adminui/)
+-   **API Documentation (Swagger)**: [http://localhost:8000/api/schema/swagger-ui/](http://localhost:8000/api/schema/swagger-ui/)
 
-## Stopping the Services
+## Development Workflow
 
-To stop all running containers, use:
+Use the `Makefile` for common development tasks:
 
-```bash
-docker-compose down
-```
+-   `make down`: Stop and remove all services.
+-   `make logs`: View logs from all services.
+-   `make test`: Run the pytest suite for the Django app.
+-   `make worker`: Start a Celery worker manually (if not using the service from `docker-compose.yml`).
+-   `make shell`: Open a Bash shell inside the Django container for debugging or running commands.

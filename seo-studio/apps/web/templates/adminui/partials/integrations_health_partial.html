@@ -1,0 +1,33 @@
+<!-- templates/adminui/partials/integrations_health_partial.html -->
+<div class="overflow-x-auto">
+    <table class="w-full text-sm text-left text-gray-500">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+            <tr>
+                <th scope="col" class="px-4 py-3">سرویس</th>
+                <th scope="col" class="px-4 py-3">وضعیت</th>
+                <th scope="col" class="px-4 py-3">آخرین همگام‌سازی</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for connector in connectors_data %}
+            <tr class="border-b">
+                <th scope="row" class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{{ connector.type }}</th>
+                <td class="px-4 py-3">
+                    {% if connector.status == "ACTIVE" %}
+                        <span class="text-green-500">●</span> فعال
+                    {% elif connector.status == "DISABLED" %}
+                        <span class="text-gray-500">●</span> غیرفعال
+                    {% else %}
+                        <span class="text-red-500">●</span> خطا
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3">{{ connector.last_sync_at|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="px-4 py-3 text-center">هیچ یکپارچه‌سازی تعریف نشده است.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

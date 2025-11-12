@@ -1,70 +1,79 @@
 # adminui/views.py
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.views.decorators.http import require_POST
 from content.models import Post, Category
 from .forms import CategoryForm
+from integrations.health import get_system_health, get_connectors_health
+from core.auth import require_roles
 
-# Utility function to prepare response with message header
-def htmx_message_response(request, template_name, context, message):
-    response = render(request, template_name, context)
-    response['HX-Trigger'] = '{"showMessage": "' + message + '"}' # A simple way to trigger events
-    response['X-Message'] = message # Custom header for simple toast
+# Utility to add a toast message header to an HTMX response
+def htmx_response_with_message(response: HttpResponse, message: str) -> HttpResponse:
+    response['HX-Trigger'] = f'{{"showMessage": "{message}"}}'
     return response
 
 @login_required
-def dashboard(request):
-    post_count = Post.objects.count()
-    category_count = Category.objects.count()
+@require_roles('admin', 'editor')
+def dashboard(request: HttpRequest) -> HttpResponse:
+    """Displays the main admin dashboard."""
     context = {
-        'post_count': post_count,
-        'category_count': category_count,
+        'post_count': Post.objects.count(),
+        'category_count': Category.objects.count(),
     }
     return render(request, 'adminui/dashboard.html', context)
 
+# --- Health Partials for Dashboard ---
 @login_required
-def health_check(request):
-    return HttpResponse('<span class="text-green-500 font-bold">● آنلاین</span>')
+@require_roles('admin', 'editor')
+def system_health_partial(request: HttpRequest) -> HttpResponse:
+    """HTMX partial view for the system health card."""
+    health_data = get_system_health()
+    return render(request, 'adminui/partials/system_health_partial.html', {'health_data': health_data})
 
-# Category CRUD Views
 @login_required
-def category_list(request):
+@require_roles('admin', 'editor')
+def integrations_health_partial(request: HttpRequest) -> HttpResponse:
+    """HTMX partial view for the integrations health card."""
+    connectors_data = get_connectors_health()
+    return render(request, 'adminui/partials/integrations_health_partial.html', {'connectors_data': connectors_data})
+
+# --- Category CRUD Views ---
+@login_required
+@require_roles('admin', 'editor')
+def category_list(request: HttpRequest) -> HttpResponse:
+    """Displays the list of categories."""
     categories = Category.objects.all()
     return render(request, 'adminui/category_list.html', {'categories': categories})
 
 @login_required
-def category_create(request):
+@require_roles('admin', 'editor')
+def category_create(request: HttpRequest) -> HttpResponse:
+    """Handles both GET (show form) and POST (save form) for creating a category."""
     if request.method == 'POST':
         form = CategoryForm(request.POST)
         if form.is_valid():
             form.save()
             categories = Category.objects.all()
-            return htmx_message_response(
-                request,
-                'adminui/partials/category_table.html',
-                {'categories': categories},
-                'دسته‌بندی با موفقیت ایجاد شد.'
-            )
+            response = render(request, 'adminui/partials/category_table.html', {'categories': categories})
+            return htmx_response_with_message(response, 'دسته‌بندی با موفقیت ایجاد شد.')
     else:
         form = CategoryForm()
 
     return render(request, 'adminui/partials/category_form.html', {'form': form})
 
 @login_required
-def category_update(request, pk):
+@require_roles('admin', 'editor')
+def category_update(request: HttpRequest, pk: str) -> HttpResponse:
+    """Handles both GET (show form) and POST (save form) for updating a category."""
     category = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
         form = CategoryForm(request.POST, instance=category)
         if form.is_valid():
             form.save()
             categories = Category.objects.all()
-            return htmx_message_response(
-                request,
-                'adminui/partials/category_table.html',
-                {'categories': categories},
-                'دسته‌بندی با موفقیت ویرایش شد.'
-            )
+            response = render(request, 'adminui/partials/category_table.html', {'categories': categories})
+            return htmx_response_with_message(response, 'دسته‌بندی با موفقیت ویرایش شد.')
     else:
         form = CategoryForm(instance=category)
 
@@ -72,13 +81,11 @@ def category_update(request, pk):
 
 @require_POST
 @login_required
-def category_delete(request, pk):
+@require_roles('admin', 'editor')
+def category_delete(request: HttpRequest, pk: str) -> HttpResponse:
+    """Handles POST request to delete a category."""
     category = get_object_or_404(Category, pk=pk)
     category.delete()
     categories = Category.objects.all()
-    return htmx_message_response(
-        request,
-        'adminui/partials/category_table.html',
-        {'categories': categories},
-        'دسته‌بندی با موفقیت حذف شد.'
-    )
+    response = render(request, 'adminui/partials/category_table.html', {'categories': categories})
+    return htmx_response_with_message(response, 'دسته‌بندی با موفقیت حذف شد.')
