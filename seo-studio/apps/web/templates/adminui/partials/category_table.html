@@ -1,0 +1,44 @@
+<!-- templates/adminui/partials/category_table.html -->
+<table class="w-full text-right">
+    <thead>
+        <tr class="border-b">
+            <th class="p-4">نام</th>
+            <th class="p-4">اسلاگ</th>
+            <th class="p-4">عملیات</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for category in categories %}
+        <tr class="border-b hover:bg-gray-50">
+            <td class="p-4">{{ category.name }}</td>
+            <td class="p-4">{{ category.slug }}</td>
+            <td class="p-4">
+                <button
+                    hx-get="{% url 'adminui:category_update' category.id %}"
+                    hx-target="#modal-content"
+                    hx-swap="innerHTML"
+                    onclick="document.getElementById('modal').classList.remove('hidden')"
+                    class="text-blue-500 hover:underline px-2"
+                >
+                    ویرایش
+                </button>
+                <button
+                    hx-post="{% url 'adminui:category_delete' category.id %}"
+                    hx-target="#category-table"
+                    hx-swap="outerHTML"
+                    hx-confirm="آیا از حذف این دسته‌بندی مطمئن هستید؟"
+                    class="text-red-500 hover:underline px-2"
+                >
+                    حذف
+                </button>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3" class="p-4 text-center text-gray-500">
+                هیچ دسته‌بندی یافت نشد.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

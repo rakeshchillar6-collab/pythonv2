@@ -1,0 +1,68 @@
+<!-- templates/adminui/base.html -->
+<!DOCTYPE html>
+<html lang="en" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SEO Studio Admin{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; } /* Add a nice Persian font if needed */
+        [x-cloak] { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-800 text-white flex-shrink-0">
+            <div class="p-4 text-2xl font-bold">SEO Studio</div>
+            <nav class="mt-8">
+                <a href="{% url 'adminui:dashboard' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">داشبورد</a>
+                <a href="{% url 'adminui:category_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">دسته‌بندی‌ها</a>
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">پست‌ها</a>
+                <!-- Add more links here -->
+            </nav>
+        </aside>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Topbar -->
+            <header class="bg-white shadow-md p-4 flex justify-between items-center">
+                <div>
+                    {% block breadcrumb %}
+                    <span class="text-gray-600">خوش آمدید!</span>
+                    {% endblock %}
+                </div>
+                <div>
+                    <span class="mr-4">کاربر: {{ request.user.email }}</span>
+                    <a href="{% url 'admin:logout' %}" class="text-red-500 hover:underline">خروج</a>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <div id="toast-container" class="fixed top-5 right-5 z-50"></div>
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Simple toast notification for HTMX events
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            const message = evt.detail.xhr.getResponseHeader("X-Message");
+            if (message) {
+                const toastContainer = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'bg-green-500 text-white px-4 py-2 rounded-lg shadow-md mb-2';
+                toast.innerText = message;
+                toastContainer.appendChild(toast);
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>

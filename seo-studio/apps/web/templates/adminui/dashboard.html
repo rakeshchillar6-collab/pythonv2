@@ -1,0 +1,46 @@
+<!-- templates/adminui/dashboard.html -->
+{% extends "adminui/base.html" %}
+
+{% block title %}داشبورد | پنل ادمین{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'adminui:dashboard' %}">داشبورد</a>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <h1 class="text-3xl font-bold mb-6">داشبورد</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Card 1: Total Posts -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-700">تعداد پست‌ها</h2>
+            <p class="text-3xl font-bold mt-2">{{ post_count }}</p>
+        </div>
+
+        <!-- Card 2: Total Categories -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-700">تعداد دسته‌بندی‌ها</h2>
+            <p class="text-3xl font-bold mt-2">{{ category_count }}</p>
+        </div>
+
+        <!-- Card 3: System Health -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-700">وضعیت سرویس</h2>
+            <div
+                hx-get="{% url 'adminui:health_check' %}"
+                hx-trigger="load, every 30s"
+                hx-swap="innerHTML"
+            >
+                <span class="text-gray-500">در حال بارگذاری...</span>
+            </div>
+        </div>
+
+        <!-- Card 4: Latest Activity (Stub) -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-700">آخرین فعالیت‌ها</h2>
+            <p class="text-gray-500 mt-2">به زودی...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: seo_studio_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-seo_studio}
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: seo_studio_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: ./infra/docker/django/Dockerfile
+    container_name: seo_studio_web
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./seo-studio/apps/web:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./infra/env/.env.dev
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: on-failure
+
+  worker:
+    build:
+      context: .
+      dockerfile: ./infra/docker/django/Dockerfile
+    container_name: seo_studio_worker
+    command: >
+      sh -c "celery -A seo_studio worker --loglevel=info"
+    volumes:
+      - ./seo-studio/apps/web:/app
+    env_file:
+      - ./infra/env/.env.dev
+    depends_on:
+      web:
+        condition: service_started
+    restart: on-failure
+
+  next:
+    build:
+      context: .
+      dockerfile: ./infra/docker/next/Dockerfile
+    container_name: seo_studio_next
+    volumes:
+      - ./seo-studio/apps/next:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./infra/env/.env.dev
+    restart: on-failure
+
+volumes:
+  postgres_data:
