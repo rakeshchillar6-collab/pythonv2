@@ -1,0 +1,112 @@
+<!-- templates/adminui/base.html -->
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}پنل مدیریت استودیو سئو{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInozzF++Wb0kyBC8" crossorigin="anonymous"></script>
+
+    <!-- Alpine.js for UI interactions -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        /* Simple transition for Alpine.js */
+        [x-cloak] { display: none !important; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
+        .fade-enter, .fade-leave-to { opacity: 0; }
+        /* Add a Persian font if available */
+        /* @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap'); */
+        /* body { font-family: 'Vazirmatn', sans-serif; } */
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+    <div x-data="{ sidebarOpen: true }" class="flex h-screen">
+        <!-- Sidebar -->
+        <aside
+            class="bg-gray-800 text-white w-64 flex-shrink-0 transition-all duration-300"
+            :class="{ '-mr-64': !sidebarOpen }"
+        >
+            <div class="p-4 text-2xl font-bold border-b border-gray-700">استودیو سئو</div>
+            <nav class="mt-4" x-data="{ open: false }">
+                <a href="{% url 'adminui:dashboard' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">داشبورد</a>
+                <a href="{% url 'adminui:category_list' %}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">دسته‌بندی‌ها</a>
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 text-gray-500">پست‌ها (بزودی)</a>
+
+                <!-- Vector Search Section -->
+                <div @click.away="open = false" class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" class="flex justify-between items-center w-full py-2.5 px-4 text-left text-white rounded transition duration-200 hover:bg-gray-700">
+                        <span>جستجوی معنایی</span>
+                        <svg class="w-4 h-4 transition-transform duration-200" :class="{'rotate-180': open, 'rotate-0': !open}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <div x-show="open" class="pl-4 pr-2 py-2 bg-gray-750" x-cloak>
+                        <a href="{% url 'adminui:corpus_list' %}" class="block text-sm py-2 px-4 rounded hover:bg-gray-600">مدیریت کورپوس</a>
+                        <a href="{% url 'adminui:search_console' %}" class="block text-sm py-2 px-4 rounded hover:bg-gray-600">کنسول جستجو</a>
+                    </div>
+                </div>
+
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 text-gray-500">یکپارچه‌سازی (بزودی)</a>
+            </nav>
+        </aside>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Topbar -->
+            <header class="bg-white shadow-md p-4 flex justify-between items-center">
+                <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+                <div x-data="{ dropdownOpen: false }" class="relative">
+                    <button @click="dropdownOpen = !dropdownOpen" class="flex items-center space-x-2">
+                        <span>{{ request.user.email }}</span>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <div x-show="dropdownOpen" @click.away="dropdownOpen = false" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20" x-cloak>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">پروفایل</a>
+                        <a href="{% url 'admin:logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">خروج</a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast container for notifications -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2"></div>
+
+    <script>
+        document.body.addEventListener('htmx:beforeSwap', function (evt) {
+            if (evt.detail.xhr.status >= 400) {
+                // Allow default error handling for 4xx and 5xx responses
+                evt.detail.shouldSwap = true;
+                evt.detail.isError = true;
+            }
+        });
+
+        // Listen for custom event to show toast messages
+        document.body.addEventListener('showMessage', function (evt) {
+            const message = evt.detail.value;
+            const toastContainer = document.getElementById('toast-container');
+
+            const toast = document.createElement('div');
+            toast.className = 'fade-enter-active bg-green-500 text-white px-4 py-3 rounded-lg shadow-md max-w-xs';
+            toast.innerText = message;
+
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('fade-leave-to');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

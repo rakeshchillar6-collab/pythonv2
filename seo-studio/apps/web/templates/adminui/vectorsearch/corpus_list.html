@@ -1,0 +1,67 @@
+<!-- templates/adminui/vectorsearch/corpus_list.html -->
+{% extends "adminui/base.html" %}
+
+{% block title %}مدیریت کورپوس‌ها{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">مدیریت کورپوس‌ها</h1>
+        <button
+            hx-get="#" {# URL to fetch create form #}
+            hx-target="#modal-content"
+            hx-swap="innerHTML"
+            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+            onclick="document.getElementById('modal').classList.remove('hidden')"
+        >
+            ایجاد کورپوس جدید
+        </button>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <table class="w-full text-right">
+            <thead>
+                <tr class="border-b">
+                    <th class="p-4">نام</th>
+                    <th class="p-4">سایت</th>
+                    <th class="p-4">زبان</th>
+                    <th class="p-4">نوع محتوا</th>
+                    <th class="p-4">وضعیت</th>
+                    <th class="p-4">عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for corpus in corpora %}
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-4 font-medium">{{ corpus.name }}</td>
+                    <td class="p-4 text-gray-600">{{ corpus.site.name }}</td>
+                    <td class="p-4">{{ corpus.get_lang_display }}</td>
+                    <td class="p-4">{{ corpus.get_content_type_display }}</td>
+                    <td class="p-4">
+                        {% if corpus.is_active %}
+                            <span class="text-green-500">● فعال</span>
+                        {% else %}
+                            <span class="text-gray-500">● غیرفعال</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4">
+                        <a href="#" class="text-blue-500 hover:underline">مشاهده اسناد</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-4 text-center text-gray-500">هیچ کورپوسی یافت نشد.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal container -->
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div id="modal-content" class="bg-white rounded-lg shadow-lg w-1/2">
+        <!-- Corpus form will be loaded here -->
+    </div>
+</div>
+{% endblock %}

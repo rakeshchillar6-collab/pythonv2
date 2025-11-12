@@ -1,0 +1,54 @@
+<!-- templates/adminui/dashboard.html -->
+{% extends "adminui/base.html" %}
+
+{% block title %}داشبورد | پنل مدیریت{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <h1 class="text-3xl font-bold mb-6">داشبورد</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main content column -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-gray-700">آمار کلی</h2>
+                <div class="grid grid-cols-2 gap-4 mt-4 text-center">
+                    <div>
+                        <p class="text-3xl font-bold">{{ post_count }}</p>
+                        <p class="text-gray-500">پست</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold">{{ category_count }}</p>
+                        <p class="text-gray-500">دسته‌بندی</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                 <h2 class="text-xl font-semibold text-gray-700 mb-4">وضعیت یکپارچه‌سازی‌ها</h2>
+                <div
+                    hx-get="{% url 'adminui:integrations_health_partial' %}"
+                    hx-trigger="load, every 1m"
+                    hx-swap="innerHTML"
+                >
+                    <p class="text-gray-500">در حال بارگذاری وضعیت کانکتورها...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar column for health status -->
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">سلامت سیستم</h2>
+                <div
+                    hx-get="{% url 'adminui:system_health_partial' %}"
+                    hx-trigger="load, every 30s"
+                    hx-swap="innerHTML"
+                >
+                    <p class="text-gray-500">در حال بارگذاری وضعیت...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
