@@ -1,0 +1,27 @@
+{# adminui/templates/adminui/pages/metaphorge/dashboard.html #}
+{% extends "adminui/base.html" %}
+
+{% block title %}Metaphorge Projects{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold text-gray-800">Metaphorge Projects</h1>
+        <button
+            hx-get="{% url 'adminui:mf-project-create-modal' %}"
+            hx-target="#modal-content"
+            onclick="document.getElementById('modal').classList.remove('hidden')"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition duration-200"
+        >
+            New Project
+        </button>
+    </div>
+
+    <div id="project-list-container"
+         hx-get="{% url 'adminui:mf-project-list-partial' %}"
+         hx-trigger="load, every 10s, projectListChanged from:body"
+         hx-swap="innerHTML">
+        <p class="text-gray-500">Loading projects...</p>
+    </div>
+</div>
+{% endblock %}

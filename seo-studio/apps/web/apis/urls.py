@@ -35,6 +35,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('', include('apis.urls.reports')),
     path('', include('apis.urls.seo_urls')),
+    path('', include('apis.urls.metaphorge_urls')),
 
     # SEO & Analytics Endpoints
     path('seo/ta/', TopicalAuthorityView.as_view(), name='topical-authority'),

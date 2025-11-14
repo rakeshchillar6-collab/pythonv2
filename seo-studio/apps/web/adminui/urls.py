@@ -44,4 +44,7 @@ urlpatterns = [
 
     # Publishing
     path('publish/', include('adminui.urls.publishing_urls')),
+
+    # Metaphorge
+    path('metaphorge/', include('adminui.urls.metaphorge_urls')),
 ]

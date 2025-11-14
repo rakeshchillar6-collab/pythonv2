@@ -56,7 +56,6 @@ LOCAL_APPS = [
     'integrations.apps.IntegrationsConfig',
     'content.apps.ContentConfig',
     'seo.apps.SeoConfig',
-    'metaphorge.apps.MetaphorgeConfig',
     'reports.apps.ReportsConfig',
     'scheduler.apps.SchedulerConfig',
     'rum.apps.RumConfig',
@@ -74,6 +73,7 @@ LOCAL_APPS = [
     'sitemap.apps.SitemapConfig',
     'robots.apps.RobotsConfig',
     'publishing.apps.PublishingConfig',
+    'metaphorge.apps.MetaphorgeConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
