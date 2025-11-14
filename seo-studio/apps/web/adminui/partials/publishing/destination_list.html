@@ -1,0 +1,46 @@
+{# adminui/templates/adminui/partials/publishing/destination_list.html #}
+<div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for dest in destinations %}
+            <tr id="dest-{{ dest.id }}">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ dest.name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ dest.get_type_display }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-xs">
+                    {% if dest.type == 'headless_push' %}
+                        URL: {{ dest.config.endpoint_url }}
+                    {% elif dest.type == 'static_export' %}
+                        Root: {{ dest.config.target_root }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                        hx-delete="{% url 'adminui:destination-delete' dest.id %}"
+                        hx-target="#dest-{{ dest.id }}"
+                        hx-swap="outerHTML"
+                        hx-confirm="Are you sure?"
+                        class="text-red-600 hover:text-red-900">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+                    No publishing destinations found. Create one to get started.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

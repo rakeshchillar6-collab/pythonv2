@@ -1,0 +1,97 @@
+{# adminui/templates/adminui/pages/publishing/destinations.html #}
+{% extends "adminui/base.html" %}
+
+{% block title %}Publishing Destinations{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold text-gray-800">Publishing Destinations</h1>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {# Left side: Create new destination form #}
+        <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4">New Destination</h2>
+            <form
+                hx-post="{% url 'adminui:destination-create' %}"
+                hx-target="#destination-list"
+                hx-swap="innerHTML"
+                hx-on::after-request="this.reset()"
+            >
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                    <input type="text" name="name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm">
+                </div>
+
+                <div class="mb-4">
+                    <label for="type" class="block text-sm font-medium text-gray-700">Type</label>
+                    <select name="type" id="dest-type-select" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md">
+                        {% for value, name in destination_types %}
+                        <option value="{{ value }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {# Type-specific config fields #}
+                <div id="headless-push-fields">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Endpoint URL</label>
+                        <input type="url" name="endpoint_url" placeholder="https://example.com/api/publish" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Auth Header Template</label>
+                        <input type="text" name="auth_header_template" value="Bearer {token}" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm">
+                    </div>
+                     <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">API Key / Token</label>
+                        <input type="password" name="api_key" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm">
+                    </div>
+                </div>
+
+                <div id="static-export-fields" class="hidden">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Target Root Path</label>
+                        <input type="text" name="target_root" placeholder="/var/www/static-site" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Asset Policy</label>
+                        <select name="asset_policy" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md">
+                            <option value="link">Link to original</option>
+                            <option value="copy">Copy to destination</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg shadow">Add Destination</button>
+            </form>
+        </div>
+
+        {# Right side: List of current destinations #}
+        <div id="destination-list" class="lg:col-span-2">
+            {% include "adminui/partials/publishing/destination_list.html" %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('dest-type-select').addEventListener('change', function() {
+        const headlessFields = document.getElementById('headless-push-fields');
+        const staticFields = document.getElementById('static-export-fields');
+        if (this.value === 'headless_push') {
+            headlessFields.classList.remove('hidden');
+            staticFields.classList.add('hidden');
+        } else if (this.value === 'static_export') {
+            headlessFields.classList.add('hidden');
+            staticFields.classList.remove('hidden');
+        } else {
+            headlessFields.classList.add('hidden');
+            staticFields.classList.add('hidden');
+        }
+    });
+</script>
+
+{% endblock %}

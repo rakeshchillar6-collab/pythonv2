@@ -68,7 +68,12 @@ LOCAL_APPS = [
     'seo_trends.apps.SeoTrendsConfig',
     'alerts.apps.AlertsConfig',
     'abtest.apps.AbtestConfig',
-    'reports.apps.ReportsConfig',
+
+    # New SEO & Publishing apps
+    'schema_builder.apps.SchemaBuilderConfig',
+    'sitemap.apps.SitemapConfig',
+    'robots.apps.RobotsConfig',
+    'publishing.apps.PublishingConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

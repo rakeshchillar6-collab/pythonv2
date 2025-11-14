@@ -38,4 +38,10 @@ urlpatterns = [
 
     # Reports
     path('reports/', include('adminui.urls.reports')),
+
+    # SEO Tools
+    path('seo/schema/', include('adminui.urls.schema_builder_urls')),
+
+    # Publishing
+    path('publish/', include('adminui.urls.publishing_urls')),
 ]

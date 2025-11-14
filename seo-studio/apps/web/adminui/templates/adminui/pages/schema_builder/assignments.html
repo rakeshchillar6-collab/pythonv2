@@ -1,0 +1,81 @@
+{# adminui/templates/adminui/pages/schema_builder/assignments.html #}
+{% extends "adminui/base.html" %}
+
+{% block title %}Schema Assignments{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold text-gray-800">Schema Assignments</h1>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {# Left side: Create new assignment form #}
+        <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4">New Assignment</h2>
+            <form
+                hx-post="{% url 'adminui:schema-assignment-create' %}"
+                hx-target="#assignment-list"
+                hx-swap="innerHTML"
+                hx-on::after-request="this.reset()"
+            >
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label for="template" class="block text-sm font-medium text-gray-700">Template</label>
+                    <select name="template" id="template" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        {% for t in templates %}
+                        <option value="{{ t.id }}">{{ t.name }} ({{ t.schema_type }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="target_type" class="block text-sm font-medium text-gray-700">Target Type</label>
+                    <select name="target_type" id="target_type" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="global">Global</option>
+                        <option value="post_type">Post Type</option>
+                        <option value="category">Category</option>
+                    </select>
+                </div>
+
+                {# Dynamic fields based on target_type would go here #}
+                {# For simplicity, we'll show all and rely on backend logic #}
+
+                <div class="mb-4">
+                    <label for="post_type" class="block text-sm font-medium text-gray-700">Post Type</label>
+                    <select name="post_type" id="post_type" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="">-- Select --</option>
+                        {% for value, name in post_types %}
+                        <option value="{{ value }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                    <select name="category" id="category" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="">-- Select --</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="priority" class="block text-sm font-medium text-gray-700">Priority</label>
+                    <input type="number" name="priority" value="10" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm">
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg shadow">Add Assignment</button>
+            </form>
+        </div>
+
+        {# Right side: List of current assignments #}
+        <div id="assignment-list" class="lg:col-span-2">
+            {% include "adminui/partials/schema_builder/assignment_list.html" %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{# adminui/templates/adminui/pages/publishing/jobs.html #}
+{% extends "adminui/base.html" %}
+
+{% block title %}Publishing Jobs{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold text-gray-800">Publishing Jobs</h1>
+    </div>
+
+    <div id="job-list-container"
+         hx-get="{% url 'adminui:job-list-partial' %}"
+         hx-trigger="load, every 15s, jobListChanged from:body"
+         hx-swap="innerHTML">
+        {% include "adminui/partials/publishing/job_list.html" %}
+    </div>
+</div>
+{% endblock %}

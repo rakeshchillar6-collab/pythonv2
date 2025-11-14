@@ -1,0 +1,29 @@
+{# adminui/templates/adminui/pages/schema_builder/templates.html #}
+{% extends "adminui/base.html" %}
+
+{% block title %}Schema Templates{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold text-gray-800">Schema Templates</h1>
+        <button
+            hx-get="{% url 'adminui:schema-template-create' %}"
+            hx-target="#modal-content"
+            hx-trigger="click"
+            onclick="document.getElementById('modal').classList.remove('hidden')"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition duration-200"
+        >
+            New Template
+        </button>
+    </div>
+
+    <div id="template-list-container"
+         hx-get="{% url 'adminui:schema-template-list-partial' %}"
+         hx-trigger="load, schemaTemplateChanged from:body"
+         hx-swap="innerHTML">
+        <!-- Template list will be loaded here by HTMX -->
+        <p class="text-gray-500">Loading templates...</p>
+    </div>
+</div>
+{% endblock %}

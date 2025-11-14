@@ -1,0 +1,46 @@
+{# adminui/templates/adminui/partials/schema_builder/template_list.html #}
+<div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Schema Type</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignments</th>
+                <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for template in templates %}
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ template.name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ template.schema_type }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ template.assignments.count }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                        hx-get="{% url 'adminui:schema-template-edit' template.id %}"
+                        hx-target="#modal-content"
+                        hx-trigger="click"
+                        onclick="document.getElementById('modal').classList.remove('hidden')"
+                        class="text-indigo-600 hover:text-indigo-900 mr-4">
+                        Edit
+                    </button>
+                    <button
+                        hx-delete="{% url 'adminui:schema-template-delete' template.id %}"
+                        hx-confirm="Are you sure you want to delete this template?"
+                        hx-swap="outerHTML"
+                        hx-target="closest tr"
+                        class="text-red-600 hover:text-red-900">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+                    No schema templates found. Create one to get started.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

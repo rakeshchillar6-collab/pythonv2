@@ -34,9 +34,13 @@ app_name = 'apis'
 urlpatterns = [
     path('', include(router.urls)),
     path('', include('apis.urls.reports')),
+    path('', include('apis.urls.seo_urls')),
 
     # SEO & Analytics Endpoints
     path('seo/ta/', TopicalAuthorityView.as_view(), name='topical-authority'),
+
+    # Content Render Cache for Local Publisher
+    path('content/render/<slug:slug>/', ContentRenderCacheView.as_view(), name='content-render'),
 
     # Health check endpoints
     path('health/', HealthCheckView.as_view(), name='health-check'),
