@@ -74,6 +74,10 @@ LOCAL_APPS = [
     'robots.apps.RobotsConfig',
     'publishing.apps.PublishingConfig',
     'metaphorge.apps.MetaphorgeConfig',
+
+    # New RSS and Auto-linking apps
+    'rss.apps.RssConfig',
+    'autolink.apps.AutolinkConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -214,6 +218,10 @@ CELERY_BEAT_SCHEDULE = {
     'detect-alerts-daily': {
         'task': 'alerts.tasks.detect_all_alerts',
         'schedule': crontab(minute='0', hour='5'), # Run every night at 5 AM
+    },
+    'schedule-rss-feed-checks': {
+        'task': 'rss.tasks.schedule_feed_checks',
+        'schedule': crontab(minute='*/5'), # Run every 5 minutes
     },
 }
 

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>Test Feed</title>
+  <link>https://test.com/</link>
+  <description>A test feed for parsing.</description>
+  <item>
+    <title>Test Post 1</title>
+    <link>https://test.com/post-1</link>
+    <description>This is the summary for post 1.</description>
+    <pubDate>Mon, 01 Jan 2024 12:00:00 GMT</pubDate>
+    <guid isPermaLink="false">post-1-guid</guid>
+  </item>
+  <item>
+    <title>Test Post 2</title>
+    <link>https://test.com/post-2</link>
+    <description>This is the summary for post 2.</description>
+    <content:encoded><![CDATA[<p>This is the full content.</p>]]></content:encoded>
+    <pubDate>Tue, 02 Jan 2024 13:00:00 GMT</pubDate>
+    <guid isPermaLink="false">post-2-guid</guid>
+  </item>
+</channel>
+</rss>
