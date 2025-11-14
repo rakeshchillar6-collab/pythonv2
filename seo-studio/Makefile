@@ -1,63 +1,54 @@
-# Makefile for seo-studio project
-
-.PHONY: help up down logs migrate superuser seed test worker beat
+# Makefile
+.PHONY: help up down build logs shell migrate seed test coverage lint
 
 help:
-	@echo "Usage: make [target]"
-	@echo ""
-	@echo "Targets:"
-	@echo "  up           Build and start all services in detached mode."
-	@echo "  down         Stop and remove all services."
-	@echo "  logs         Follow logs for all services."
-	@echo "  logs-web     Follow logs for the web (Django) service."
-	@echo "  migrate      Apply database migrations."
-	@echo "  superuser    Create a new superuser."
-	@echo "  seed         Seed the database with initial demo data."
-	@echo "  test         Run pytest tests for the Django application."
-	@echo "  worker       Start the Celery worker."
-	@echo "  beat         Start the Celery beat scheduler."
-	@echo "  shell        Open a shell in the web container."
+	@echo "Commands:"
+	@echo "  up           : Start all services in the background."
+	@echo "  down         : Stop and remove all services."
+	@echo "  build        : Build or rebuild services."
+	@echo "  logs         : Follow logs for all services."
+	@echo "  shell        : Open a shell in the Django container."
+	@echo "  migrate      : Run Django migrations."
+	@echo "  makemigrations: Create new Django migrations."
+	@echo "  seed         : Seed the database with initial data."
+	@echo "  test         : Run the Django test suite."
+	@echo "  coverage     : Run tests and generate a coverage report."
+	@echo "  lint         : Run linters (e.g., ruff, black)."
 
 up:
-	@echo "Starting up services..."
-	docker compose up --build -d
+	docker compose up -d
 
 down:
-	@echo "Stopping services..."
 	docker compose down
 
+build:
+	docker compose build
+
 logs:
-	@echo "Following logs..."
 	docker compose logs -f
 
-logs-web:
-	@echo "Following web logs..."
-	docker compose logs -f web
+shell:
+	docker compose exec web bash
 
 migrate:
-	@echo "Applying database migrations..."
 	docker compose exec web python manage.py migrate
 
-superuser:
-	@echo "Creating a superuser..."
-	docker compose exec web python manage.py createsuperuser
+makemigrations:
+	docker compose exec web python manage.py makemigrations $(filter-out $@,$(MAKECMDGOALS))
 
 seed:
-	@echo "Seeding the database with demo data..."
-	docker compose exec web python manage.py seed
+	docker compose exec web python manage.py seed_data
 
 test:
-	@echo "Running tests..."
 	docker compose exec web pytest
 
-worker:
-	@echo "Starting Celery worker..."
-	docker compose exec web celery -A seo_studio worker --loglevel=info
+coverage:
+	docker compose exec web pytest --cov=.
 
-beat:
-	@echo "Starting Celery beat..."
-	docker compose exec web celery -A seo_studio beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+lint:
+	docker compose exec web ruff check .
+	docker compose exec web black . --check
 
-shell:
-	@echo "Opening shell in web container..."
-	docker compose exec web /bin/bash
+# Allows passing arguments to makemigrations, e.g., `make makemigrations myapp`
+%:
+	@:

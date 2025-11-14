@@ -3,14 +3,14 @@ import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 from content.models import Post, Category, Redirect301, PostSlugHistory
-from core.models import User, SiteProfile
+from core.models import User, Site
 
 pytestmark = pytest.mark.django_db
 
 # --- Fixtures ---
 @pytest.fixture
 def site():
-    return SiteProfile.objects.create(name="Test Site", domain="test.com")
+    return Site.objects.create(name="Test Site", domain="test.com")
 
 @pytest.fixture
 def editor_user(create_user, create_role):

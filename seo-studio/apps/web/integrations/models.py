@@ -2,6 +2,31 @@
 from django.db import models
 from common.models import BaseModel
 from django.utils.translation import gettext_lazy as _
+from core.models import Site
+
+class GSCProperty(BaseModel):
+    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name='gsc_property')
+    property_uri = models.CharField(max_length=255, unique=True)
+    credentials_encrypted = models.TextField(blank=True)
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str: return self.property_uri
+
+class GAProperty(BaseModel):
+    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name='ga_property')
+    property_id = models.CharField(max_length=255, unique=True)
+    credentials_encrypted = models.TextField(blank=True)
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str: return self.property_id
+
+class TrendSource(BaseModel):
+    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name='trend_source')
+    keywords = models.JSONField(default=list, help_text="List of keywords to track for trends.")
+    last_check_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str: return f"Trend source for {self.site.name}"
+
 
 class Connector(BaseModel):
     """

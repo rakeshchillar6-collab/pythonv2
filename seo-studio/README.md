@@ -1,55 +1,50 @@
 # SEO Studio
 
-**SEO Studio** is a modern, modular, and scalable SEO-focused Content Management System (CMS) built with a powerful stack designed for performance and developer experience.
+SEO Studio is a comprehensive, data-driven Content Management System (CMS) designed for SEO professionals and content teams. It integrates advanced analytics, semantic search, and strategic planning tools directly into the content workflow.
 
-## Core Technologies
+This project is a monorepo containing the full stack for the SEO Studio application, built with a Django/DRF backend and a Next.js frontend.
 
--   **Backend**: Django + Django Rest Framework (DRF)
--   **Frontend**: Next.js (App Router)
--   **Database**: PostgreSQL with `pgvector` for semantic search capabilities
--   **Task Queue**: Celery with Redis as the broker
--   **Admin Panel**: Lightweight and interactive admin panel built with HTMX
--   **Containerization**: Fully containerized with Docker and Docker Compose for easy setup and deployment.
+## Key Features
 
-## Project Structure
-
-This project is a monorepo containing the following main applications:
-
--   `apps/web`: The Django backend project, serving the API and the HTMX admin panel.
--   `apps/next`: The Next.js frontend application for the public-facing website.
--   `infra/`: Contains Docker configurations, environment files, and other infrastructure-related code.
--   `docs/`: Project documentation, including installation guides and architectural decisions.
-
-## Features
-
--   **Modular Architecture**: Django apps are organized by feature (core, content, seo, etc.) for better separation of concerns.
--   **API-First Design**: A robust DRF-based API serves as the backbone for the frontend and any future clients.
--   **Semantic Search**: Leverages `pgvector` to enable powerful semantic search on content embeddings.
--   **Interactive Admin Panel**: A fast, server-rendered admin panel using HTMX, avoiding the complexity of large frontend frameworks for internal tools.
--   **Modern Frontend**: A public site built with Next.js, benefiting from features like Server-Side Rendering (SSR) and Static Site Generation (SSG).
--   **Task Scheduling**: Asynchronous task processing and scheduling with Celery.
+-   **Modular Django Backend:** A scalable backend powered by Django and Django Rest Framework.
+-   **Vector Search:** Built-in semantic search capabilities using PostgreSQL and the `pgvector` extension.
+-   **Intelligence Layer:** Automated alerts for performance drops, topical authority modeling, and internal link equity calculation (PageRank).
+-   **Dynamic Admin Panel:** A fast, responsive admin interface built with Django templates and **HTMX**.
+-   **Asynchronous Task Processing:** Uses Celery and Redis for handling long-running background jobs like data integration syncs and report generation.
+-   **Decoupled Frontend:** A modern, performant public-facing website built with Next.js.
+-   **Containerized Environment:** The entire stack is managed with Docker and Docker Compose for easy setup and consistent development environments.
 
 ## Getting Started
 
-For detailed instructions on how to set up and run the project locally, please refer to the **[Installation Guide](./docs/INSTALL.md)**.
+This project is designed to be run using Docker. For a complete guide on how to set up your local development environment, please see the installation instructions.
+
+➡️ **[Full Installation Guide](./docs/INSTALL.md)**
 
 ### Quick Start
 
-1.  **Clone the repository.**
-2.  **Configure environment variables:** `cp infra/env/.env.example infra/env/.env.dev`
-3.  **Run the application:** `docker-compose up --build`
-4.  **Apply migrations:** `docker-compose exec web python manage.py migrate`
-5.  **Create a superuser:** `docker-compose exec web python manage.py createsuperuser`
-6.  **(Optional) Seed the database:** `docker-compose exec web python manage.py seed`
+1.  **Clone the repo:** `git clone <repository_url>`
+2.  **Set up environment:** `cp infra/env/.env.example infra/env/.env`
+3.  **Start services:** `make up`
+4.  **Run migrations:** `make migrate`
+5.  **Create a superuser:** `make shell` then `python manage.py createsuperuser`
+6.  **Access the admin:** [http://localhost:8000/adminui/](http://localhost:8000/adminui/)
 
-Once set up, the applications will be available at:
--   **Next.js Frontend**: `http://localhost:3000`
--   **Django API / Admin**: `http://localhost:8000`
+## Documentation
 
-## Next Steps
+-   **[Installation Guide](./docs/INSTALL.md):** Step-by-step instructions for setting up the development environment.
+-   **[Runbook](./docs/RUNBOOK.md):** A guide for developers on common operational tasks, project architecture, and troubleshooting.
+-   **[ADRs](./docs/ADRs/):** (Architectural Decision Records) A place to document key architectural choices.
 
-This project skeleton is the foundation for a powerful CMS. The next steps for development include:
--   Implementing the `vectorsearch` service to generate and search embeddings.
--   Building out the remaining stubbed-out Django apps (`seo`, `metaphorge`, `integrations`, etc.).
--   Expanding the HTMX admin panel with more features and CRUD interfaces.
--   Enhancing the Next.js frontend with more content types and features.
+## Project Structure
+
+-   `seo-studio/`: Project root.
+    -   `apps/`: Contains the main applications.
+        -   `web/`: The Django backend project.
+        -   `next/`: The Next.js frontend project.
+    -   `infra/`: Infrastructure configuration.
+        -   `docker/`: Dockerfiles for each service.
+        -   `docker-compose.yml`: Main Docker Compose file.
+        -   `env/`: Environment variable files.
+    -   `docs/`: Project documentation.
+    -   `packages/`: Shared libraries or components (e.g., a Python SDK, UI components).
+    -   `Makefile`: Convenience scripts for development.

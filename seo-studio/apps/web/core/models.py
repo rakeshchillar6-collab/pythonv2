@@ -41,31 +41,59 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 
-class Role(BaseModel):
+class Organization(BaseModel):
     """
-    Represents a user role, which can be assigned to users to grant permissions.
-    For simplicity, we are not using Django's built-in Permission model directly
-    but defining roles with slugs that can be checked in code.
+    Represents a company or a top-level entity.
+    Each organization can have multiple sites and users.
     """
-    name = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(max_length=100, unique=True, help_text="A unique slug for the role, e.g., 'admin', 'editor'.")
+    name = models.CharField(max_length=200, unique=True)
 
     def __str__(self) -> str:
         return self.name
 
+class Site(BaseModel):
+    """
+    Represents a website or project within an organization.
+    All content and settings are scoped to a site.
+    """
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='sites')
+    name = models.CharField(max_length=200)
+    domain = models.CharField(max_length=255, unique=True)
+
+    class Meta:
+        unique_together = ('organization', 'name')
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.domain})"
+
+class Role(BaseModel):
+    """
+    Represents a user role within an organization.
+    Permissions are stored as a JSON list of strings.
+    """
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='roles')
+    name = models.CharField(max_length=100)
+    permissions = models.JSONField(default=list, help_text="List of permission strings, e.g., 'content.create'. Use '*' for all permissions.")
+
+    class Meta:
+        unique_together = ('organization', 'name')
+
+    def __str__(self) -> str:
+        return self.name
 
 class User(AbstractBaseUser, PermissionsMixin):
     """
-    Custom user model that uses email for authentication.
+    Custom user model. Users are scoped to an organization and have a single role.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
-    first_name = models.CharField(max_length=150, blank=True)
-    last_name = models.CharField(max_length=150, blank=True)
+    full_name = models.CharField(max_length=255, blank=True)
 
-    roles = models.ManyToManyField(Role, blank=True, related_name="users")
+    # Each user belongs to one organization and has one role.
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
+    role = models.ForeignKey(Role, on_delete=models.SET_NULL, related_name='users', null=True, blank=True)
 
-    is_staff = models.BooleanField(default=False, help_text="Designates whether the user can log into this admin site.")
+    is_staff = models.BooleanField(default=False, help_text="Designates whether the user can log into the Django admin site.")
     is_active = models.BooleanField(default=True, help_text="Designates whether this user should be treated as active.")
     date_joined = models.DateTimeField(auto_now_add=True)
 

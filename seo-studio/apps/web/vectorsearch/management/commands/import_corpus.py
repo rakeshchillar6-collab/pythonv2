@@ -1,7 +1,7 @@
 # vectorsearch/management/commands/import_corpus.py
 import csv
 from django.core.management.base import BaseCommand, CommandError
-from core.models import SiteProfile
+from core.models import Site
 from vectorsearch.models import Corpus
 from vectorsearch.services.ingest import ingest_document
 
@@ -19,9 +19,9 @@ class Command(BaseCommand):
         corpus_name = options['corpus_name']
 
         try:
-            site = SiteProfile.objects.get(id=site_id)
-        except SiteProfile.DoesNotExist:
-            raise CommandError(f"SiteProfile with ID '{site_id}' does not exist.")
+            site = Site.objects.get(id=site_id)
+        except Site.DoesNotExist:
+            raise CommandError(f"Site with ID '{site_id}' does not exist.")
 
         corpus, created = Corpus.objects.get_or_create(
             site=site,

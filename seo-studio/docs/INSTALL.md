@@ -1,89 +1,124 @@
-# Installation Guide for SEO Studio
+# SEO Studio Installation Guide
 
-This document provides instructions on how to set up and run the SEO Studio project locally using Docker and a Makefile for convenience.
+This guide provides instructions for setting up the SEO Studio monorepo for local development.
 
 ## Prerequisites
 
--   Docker
--   Docker Compose
--   `make` (optional, but recommended for easy command execution)
+- **Docker & Docker Compose:** Ensure you have Docker Engine and Docker Compose installed on your system. This is the primary requirement for running the application stack.
+- **Git:** For cloning the repository.
+- **Make (Optional):** A `Makefile` is provided for convenience. If you don't have `make`, you can run the `docker compose` commands directly.
 
-## Setup Steps
+## 1. Clone the Repository
 
-### 1. Configure Environment Variables
-
-First, copy the example environment file to create your local development configuration.
+First, clone the project repository from GitHub to your local machine:
 
 ```bash
-cp infra/env/.env.example infra/env/.env.dev
+git clone <repository_url>
+cd seo-studio
 ```
 
-The default values in `.env.dev` are suitable for local development and do not need to be changed.
+## 2. Set Up Environment Variables
 
-### 2. Build and Run Services
+The project uses environment variables for configuration. An example file is provided in the `infra/env/` directory.
 
-Use the provided `Makefile` to build and start all services in the background.
+1.  **Copy the example file:**
+
+    ```bash
+    cp infra/env/.env.example infra/env/.env
+    ```
+
+2.  **Review and customize `.env`:**
+
+    Open `infra/env/.env` in your editor. The default values are suitable for local development. Key variables you might want to review are:
+
+    -   `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`: Credentials for the PostgreSQL database.
+    -   `DJANGO_SECRET_KEY`: A secret key for Django. A default is provided, but you can generate a new one.
+    -   `NEXT_PUBLIC_API_URL`: The URL for the Next.js frontend to communicate with the Django API. The default `http://localhost:8000/api/` should work with the default Docker Compose setup.
+
+## 3. Build and Start the Services
+
+With Docker running, you can build the container images and start all the services (Django, Next.js, Postgres, Redis, Celery) using the `Makefile` or `docker compose`.
+
+**Using Make (Recommended):**
 
 ```bash
+make build
 make up
 ```
 
-This command will:
--   Build the Docker images for the Django and Next.js applications.
--   Start all services (`web`, `next`, `db`, `redis`, `worker`) in detached mode.
+**Using Docker Compose:**
 
-*Alternatively, without `make`, you can run:*
-`docker compose up --build -d`
+```bash
+docker compose build
+docker compose up -d
+```
 
-### 3. Apply Database Migrations
+The services will now be running in the background. You can check their status with `docker compose ps`.
 
-Once the containers are running, apply the database migrations to set up the schema.
+## 4. Initialize the Database
+
+Once the containers are running, you need to apply the database migrations to set up the schema.
+
+**Using Make:**
 
 ```bash
 make migrate
 ```
 
-*Alternatively, without `make`:*
-`docker compose exec web python manage.py migrate`
-
-### 4. Create a Superuser
-
-To access the admin panel, you need a superuser account.
+**Using Docker Compose:**
 
 ```bash
-make superuser
+docker compose exec web python manage.py migrate
 ```
 
-Follow the prompts to set an email and password.
+This command will also create the `vector` extension in PostgreSQL, as defined in the initial migration.
 
-*Alternatively, without `make`:*
-`docker compose exec web python manage.py createsuperuser`
+## 5. Create a Superuser
 
-### 5. Seed Initial Data (Recommended)
+To access the admin panel, you need to create a superuser account.
 
-To populate the application with sample data (users, roles, posts, categories), run the seed command.
+**Using Make:**
+
+```bash
+make shell
+```
+
+Then, inside the container's shell:
+
+```bash
+python manage.py createsuperuser
+```
+
+Follow the prompts to set up your email, password, and other details.
+
+**Using Docker Compose directly:**
+
+```bash
+docker compose exec web python manage.py createsuperuser
+```
+
+## 6. Seed the Database (Optional but Recommended)
+
+To populate the application with initial sample data (a test site, users, posts, categories), you can run the seed command.
+
+**Using Make:**
 
 ```bash
 make seed
 ```
 
-This will create an `admin` and an `editor` user, along with sample content to explore.
+**Using Docker Compose:**
 
-*Alternatively, without `make`:*
-`docker compose exec web python manage.py seed`
+```bash
+docker compose exec web python manage.py seed_data
+```
 
-## Accessing the Applications
+## 7. Accessing the Applications
 
--   **Next.js Frontend**: [http://localhost:3000](http://localhost:3000)
--   **HTMX Admin Panel**: [http://localhost:8000/adminui/](http://localhost:8000/adminui/)
--   **API Documentation (Swagger)**: [http://localhost:8000/api/schema/swagger-ui/](http://localhost:8000/api/schema/swagger-ui/)
+You're all set up! You can now access the different parts of the application:
 
-## Development Workflow
+-   **Django API:** [http://localhost:8000/api/](http://localhost:8000/api/)
+-   **Django Admin UI (HTMX):** [http://localhost:8000/adminui/](http://localhost:8000/adminui/)
+-   **Next.js Frontend:** [http://localhost:3000/](http://localhost:3000/)
 
-Use the `Makefile` for common development tasks:
-
--   `make down`: Stop and remove all services.
--   `make logs`: View logs from all services.
--   `make test`: Run the pytest suite for the Django app.
--   `make worker`: Start a Celery worker manually (if not using the service from `docker-compose.yml`).
--   `make shell`: Open a Bash shell inside the Django container for debugging or running commands.
+You can log into the Admin UI with the superuser credentials you created in step 5.

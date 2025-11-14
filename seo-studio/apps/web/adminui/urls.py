@@ -31,6 +31,11 @@ urlpatterns = [
 
     # Vector Search Management
     path('vector/corpora/', views.corpus_list, name='corpus_list'),
-    # Add more vector search URLs here later
     path('vector/search/', views.search_console, name='search_console'),
+
+    # Calendar
+    path('calendar/', views.content_calendar, name='content_calendar'),
+
+    # Reports
+    path('reports/', include('adminui.urls.reports')),
 ]

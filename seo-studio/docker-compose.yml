@@ -46,7 +46,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ./infra/env/.env.dev
+      - ./infra/env/.env
     depends_on:
       db:
         condition: service_healthy
@@ -64,7 +64,7 @@ services:
     volumes:
       - ./seo-studio/apps/web:/app
     env_file:
-      - ./infra/env/.env.dev
+      - ./infra/env/.env
     depends_on:
       web:
         condition: service_started
@@ -82,7 +82,7 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - ./infra/env/.env.dev
+      - ./infra/env/.env
     restart: on-failure
 
 volumes:

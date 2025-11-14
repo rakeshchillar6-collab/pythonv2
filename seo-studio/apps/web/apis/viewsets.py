@@ -31,36 +31,54 @@ from .serializers import (
 )
 from .permissions import IsOwnerOrAdmin
 from .filters import CategoryFilter, PostFilter
+from alerts.models import Alert
+from graph.models import TopicNode, TopicEdge
+from graph.services.compute_ta_scores import calculate_ta_for_category
+from calendar.models import ContentTask
+from abtest.models import ABTest, TemplatePart
 
 # Base ViewSets (User, Role, Content)
 # ... (These remain largely the same as before) ...
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all().order_by('-date_joined')
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, RolePermission.of('admin')]
+    permission_classes = [IsAuthenticated] # Add more granular permissions as needed
+
+    def get_queryset(self):
+        # Users can only see other users in their own organization.
+        return User.objects.filter(organization=self.request.user.organization).order_by('-date_joined')
 
 class RoleViewSet(viewsets.ModelViewSet):
-    queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    permission_classes = [IsAuthenticated, RolePermission.of('admin')]
-    lookup_field = 'slug'
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Roles are scoped to an organization.
+        return Role.objects.filter(organization=self.request.user.organization)
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated, RolePermission.of('admin', 'editor')]
+    permission_classes = [IsAuthenticated]
     filterset_class = CategoryFilter
     search_fields = ['name', 'slug']
-    lookup_field = 'slug'
+
+    def get_queryset(self):
+        # Categories are scoped to a site, which belongs to an organization.
+        return Category.objects.filter(site__organization=self.request.user.organization)
 
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     filterset_class = PostFilter
     search_fields = ['title', 'content']
-    lookup_field = 'slug'
-    # ... (get_queryset, perform_create, publish action)
+
+    def get_queryset(self):
+        return Post.objects.filter(site__organization=self.request.user.organization)
+
+    def perform_create(self, serializer):
+        # When creating a post, automatically assign it to the user's site.
+        # This assumes a simple one-site-per-user or default-site logic.
+        user_site = Site.objects.filter(organization=self.request.user.organization).first()
+        serializer.save(author=self.request.user, site=user_site)
 
 # --- Vector Search ViewSet ---
 class VectorSearchViewSet(viewsets.ViewSet):
@@ -103,8 +121,9 @@ class VectorSearchViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        # Site/Corpus filtering based on user permissions
-        # TODO: Implement RBAC to filter corpus_ids based on request.user.site
+        current_site = Site.objects.filter(organization=request.user.organization).first()
+        if not current_site:
+            return Response({'error': 'User has no associated site.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Get the active embedding provider
@@ -114,8 +133,6 @@ class VectorSearchViewSet(viewsets.ViewSet):
             provider = get_provider_instance(active_version)
 
             # Execute search
-            # TODO: Determine the site based on user profile or request context
-            current_site = None
             results = semantic_search.execute_search(
                 user=request.user,
                 site=current_site,
@@ -181,3 +198,137 @@ class IntegrationsHealthCheckView(APIView):
     def get(self, request: Request, *args, **kwargs) -> Response:
         connectors_data = get_connectors_health()
         return Response(connectors_data)
+
+# --- Alerts API ---
+class AlertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Alert
+        fields = '__all__'
+
+class AlertViewSet(viewsets.ModelViewSet):
+    serializer_class = AlertSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ['type', 'severity', 'resolved_at']
+
+    def get_queryset(self):
+        # Users should only see alerts for sites in their organization.
+        return Alert.objects.filter(site__organization=self.request.user.organization)
+
+    @action(detail=True, methods=['post'])
+    def acknowledge(self, request: Request, pk: str = None) -> Response:
+        alert = self.get_object()
+        if not alert.acknowledged_by:
+            alert.acknowledged_by = request.user
+            alert.save()
+        return Response(self.get_serializer(alert).data)
+
+    @action(detail=True, methods=['post'])
+    def resolve(self, request: Request, pk: str = None) -> Response:
+        alert = self.get_object()
+        if not alert.resolved_at:
+            alert.resolved_at = timezone.now()
+            alert.save()
+        return Response(self.get_serializer(alert).data)
+
+# --- Topic Graph API ---
+class TopicNodeSerializer(serializers.ModelSerializer):
+    post_title = serializers.CharField(source='post.title', read_only=True)
+    class Meta:
+        model = TopicNode
+        fields = ['id', 'post_title', 'role', 'pagerank_internal', 'inlinks_count', 'outlinks_count']
+
+class TopicEdgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TopicEdge
+        fields = ['source', 'destination', 'anchor_text']
+
+class TopicGraphViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = TopicNodeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return TopicNode.objects.filter(post__site__organization=self.request.user.organization)
+
+    @action(detail=False, methods=['get'])
+    def edges(self, request: Request) -> Response:
+        queryset = TopicEdge.objects.filter(source__post__site__organization=request.user.organization)
+        serializer = TopicEdgeSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+# --- Topical Authority API ---
+class TopicalAuthorityView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        site = Site.objects.filter(organization=request.user.organization).first()
+        if not site:
+            return Response({"error": "No site associated with user's organization."}, status=status.HTTP_400_BAD_REQUEST)
+
+        group_by = request.query_params.get('group', 'category')
+
+        if group_by == 'category':
+            categories = Category.objects.filter(site=site)
+            results = [
+                {'category': cat.name, 'ta_score': calculate_ta_for_category(cat)}
+                for cat in categories
+            ]
+            return Response(results)
+        else:
+            return Response({"error": "Grouping by cluster is not yet implemented."}, status=status.HTTP_400_BAD_REQUEST)
+
+# --- Calendar API ---
+class ContentTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContentTask
+        fields = '__all__'
+
+class CalendarViewSet(viewsets.ModelViewSet):
+    serializer_class = ContentTaskSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ['state', 'assignee', 'type']
+
+    def get_queryset(self):
+        # Users should only see tasks for sites in their organization.
+        return ContentTask.objects.filter(post__site__organization=self.request.user.organization)
+
+    @action(detail=True, methods=['post'])
+    def transition(self, request: Request, pk: str = None) -> Response:
+        """Transitions a task to a new state."""
+        task = self.get_object()
+        new_state = request.data.get('state')
+        if new_state in ContentTask.TaskState.values:
+            task.state = new_state
+            task.save()
+            return Response(self.get_serializer(task).data)
+        else:
+            return Response({'error': 'Invalid state.'}, status=status.HTTP_400_BAD_REQUEST)
+
+# --- A/B Testing API ---
+class ABTestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ABTest
+        fields = '__all__'
+
+class ABTestViewSet(viewsets.ModelViewSet):
+    serializer_class = ABTestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ABTest.objects.filter(site__organization=self.request.user.organization)
+
+    @action(detail=True, methods=['post'])
+    def start(self, request: Request, pk: str = None) -> Response:
+        test = self.get_object()
+        if not test.started_at:
+            test.started_at = timezone.now()
+            test.stopped_at = None
+            test.save()
+        return Response(self.get_serializer(test).data)
+
+    @action(detail=True, methods=['post'])
+    def stop(self, request: Request, pk: str = None) -> Response:
+        test = self.get_object()
+        if not test.stopped_at:
+            test.stopped_at = timezone.now()
+            test.save()
+        return Response(self.get_serializer(test).data)

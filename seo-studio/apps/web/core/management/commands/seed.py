@@ -1,7 +1,7 @@
 # core/management/commands/seed.py
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from core.models import User, Organization, SiteProfile
+from core.models import User, Organization, Site
 from content.models import Category, Post
 
 class Command(BaseCommand):
@@ -14,7 +14,7 @@ class Command(BaseCommand):
         Post.objects.all().delete()
         Category.objects.all().delete()
         User.objects.filter(is_superuser=False).delete()
-        SiteProfile.objects.all().delete()
+        Site.objects.all().delete()
         Organization.objects.all().delete()
 
         self.stdout.write('Existing data cleared.')
@@ -42,7 +42,7 @@ class Command(BaseCommand):
         # Create Organization and Site
         org = Organization.objects.create(name='My Company', owner=admin_user)
         org.members.add(editor_user)
-        SiteProfile.objects.create(organization=org, name='Main Blog', domain='example.com')
+        Site.objects.create(organization=org, name='Main Blog', domain='example.com')
         self.stdout.write(self.style.SUCCESS('Organization and Site created.'))
 
         # Create Categories

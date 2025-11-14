@@ -8,14 +8,16 @@ from vectorsearch.models import Corpus, Document, TextChunk
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
-        fields = ['id', 'name', 'slug']
+        fields = ['id', 'name', 'permissions']
 
 class UserSerializer(serializers.ModelSerializer):
-    roles = serializers.SlugRelatedField(many=True, slug_field='slug', queryset=Role.objects.all())
+    organization = serializers.PrimaryKeyRelatedField(read_only=True)
+    role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), allow_null=True)
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'is_staff', 'is_active', 'roles']
-        read_only_fields = ['is_staff']
+        fields = ['id', 'email', 'full_name', 'organization', 'role', 'is_staff', 'is_active']
+        read_only_fields = ['is_staff', 'organization']
 
 # --- Content Serializers ---
 class CategorySerializer(serializers.ModelSerializer):

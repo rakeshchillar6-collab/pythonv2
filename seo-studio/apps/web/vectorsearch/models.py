@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from pgvector.django import VectorField, HNSWIndex
 
 from common.models import BaseModel
-from core.models import SiteProfile
+from core.models import Site
 
 class Corpus(BaseModel):
     """
@@ -31,7 +31,7 @@ class Corpus(BaseModel):
         IMPORT = 'import', _('Import')
         API = 'api', _('API')
 
-    site = models.ForeignKey(SiteProfile, on_delete=models.CASCADE, related_name='corpora')
+    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='corpora')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     lang = models.CharField(max_length=5, choices=Language.choices, default=Language.PERSIAN)
@@ -129,7 +129,7 @@ class QueryLog(BaseModel):
         HYBRID = 'hybrid', _('Hybrid')
         HYBRID_RERANK = 'hybrid_rerank', _('Hybrid with Rerank')
 
-    site = models.ForeignKey(SiteProfile, on_delete=models.SET_NULL, null=True, blank=True)
+    site = models.ForeignKey(Site, on_delete=models.SET_NULL, null=True, blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     query_text = models.TextField()
     mode = models.CharField(max_length=15, choices=SearchMode.choices)

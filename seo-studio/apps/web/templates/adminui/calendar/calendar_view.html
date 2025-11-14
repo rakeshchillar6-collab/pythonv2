@@ -1,0 +1,37 @@
+<!-- templates/adminui/calendar/calendar_view.html -->
+{% extends "adminui/base.html" %}
+
+{% block title %}تقویم محتوا{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">تقویم محتوا (نمای Kanban)</h1>
+        <button class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+            ایجاد تسک جدید
+        </button>
+    </div>
+
+    <div class="flex space-x-4 rtl:space-x-reverse overflow-x-auto p-2">
+        {% for state, title in columns.items %}
+        <div class="bg-gray-100 rounded-lg p-3 w-72 flex-shrink-0">
+            <h2 class="font-bold text-lg mb-4">{{ title }}</h2>
+            <div class="space-y-3">
+                {% for task in tasks_by_column|get_item:state %}
+                <div class="bg-white p-3 rounded-md shadow-sm border">
+                    <p class="font-semibold">{{ task.post.title|default:"تسک عمومی" }}</p>
+                    <p class="text-sm text-gray-500">{{ task.get_type_display }}</p>
+                    {% if task.due_at %}
+                    <p class="text-xs text-red-500 mt-2">ددلاین: {{ task.due_at|date:"Y-m-d" }}</p>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-400 text-center p-4">هیچ تسکی در این وضعیت نیست.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

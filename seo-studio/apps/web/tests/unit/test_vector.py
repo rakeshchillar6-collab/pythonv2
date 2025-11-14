@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import SiteProfile
+from core.models import Site
 from vectorsearch.models import Corpus, Document, Chunk, EmbeddingVersion
 from vectorsearch.services import chunking
 
@@ -13,7 +13,7 @@ pytestmark = pytest.mark.django_db
 # --- Fixtures ---
 @pytest.fixture
 def site():
-    return SiteProfile.objects.create(name="Test Site", domain="test.com")
+    return Site.objects.create(name="Test Site", domain="test.com")
 
 @pytest.fixture
 def corpus(site):

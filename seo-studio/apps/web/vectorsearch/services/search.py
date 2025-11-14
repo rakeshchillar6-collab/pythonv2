@@ -9,7 +9,7 @@ from pgvector.django import L2Distance
 from ..models import Chunk, Corpus, QueryLog
 from ..providers.base import EmbeddingProvider
 from ..tasks import log_search_query
-from core.models import User, SiteProfile
+from core.models import User, Site
 
 class SearchResult(TypedDict):
     """A dictionary representing a single search result."""
@@ -22,7 +22,7 @@ class SearchResult(TypedDict):
 
 def execute_search(
     user: User,
-    site: SiteProfile,
+    site: Site,
     query_text: str,
     embedding_provider: EmbeddingProvider,
     mode: str,

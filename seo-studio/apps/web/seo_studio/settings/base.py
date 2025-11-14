@@ -18,7 +18,7 @@ env = environ.Env(
 
 # For local development, read .env file
 # In production, environment variables should be set directly.
-environ.Env.read_env(os.path.join(BASE_DIR.parent, 'infra/env/.env.dev'))
+environ.Env.read_env(os.path.join(BASE_DIR.parent, 'infra/env/.env'))
 
 # --- Core Settings ---
 SECRET_KEY = env('SECRET_KEY')
@@ -63,6 +63,12 @@ LOCAL_APPS = [
     'adminui.apps.AdminuiConfig',
     'vectorsearch.apps.VectorsearchConfig',
     'apis.apps.ApisConfig',
+    'calendar.apps.CalendarConfig',
+    'graph.apps.GraphConfig',
+    'seo_trends.apps.SeoTrendsConfig',
+    'alerts.apps.AlertsConfig',
+    'abtest.apps.AbtestConfig',
+    'reports.apps.ReportsConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -77,7 +83,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.SiteMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
+    'abtest.middleware.ABTestMiddleware',
 ]
 
 # --- URLs and Server ---
@@ -193,6 +201,14 @@ CELERY_BEAT_SCHEDULE = {
     'maintain-vector-indexes-nightly': {
         'task': 'vectorsearch.tasks.maintain_indexes_task',
         'schedule': crontab(minute='0', hour='3'), # Run every night at 3 AM
+    },
+    'sync-gsc-properties-daily': {
+        'task': 'integrations.tasks.sync_all_gsc_properties', # A wrapper task
+        'schedule': crontab(minute='0', hour='4'), # Run every night at 4 AM
+    },
+    'detect-alerts-daily': {
+        'task': 'alerts.tasks.detect_all_alerts',
+        'schedule': crontab(minute='0', hour='5'), # Run every night at 5 AM
     },
 }
 

@@ -5,11 +5,11 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from common.models import BaseModel
-from core.models import SiteProfile
+from core.models import Site
 
 # --- Taxonomy Models ---
 class Category(BaseModel):
-    site = models.ForeignKey(SiteProfile, on_delete=models.CASCADE, related_name='categories')
+    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='categories')
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255)
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
@@ -43,7 +43,7 @@ class Post(BaseModel):
         NOINDEX_NOFOLLOW = 'NOINDEX_NOFOLLOW', _('No Index, No Follow')
 
     # Core Fields
-    site = models.ForeignKey(SiteProfile, on_delete=models.CASCADE, related_name='posts')
+    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='posts')
     type = models.CharField(max_length=10, choices=PostType.choices, default=PostType.ARTICLE)
     status = models.CharField(max_length=10, choices=PostStatus.choices, default=PostStatus.DRAFT, db_index=True)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='posts')
@@ -101,7 +101,7 @@ class Redirect301(BaseModel):
         SLUG_CHANGE = 'SLUG_CHANGE', _('Slug Change')
         MANUAL = 'MANUAL', _('Manual')
 
-    site = models.ForeignKey(SiteProfile, on_delete=models.CASCADE, related_name='redirects')
+    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='redirects')
     from_path = models.CharField(max_length=2048, db_index=True)
     to_path = models.CharField(max_length=2048)
     reason = models.CharField(max_length=20, choices=RedirectReason.choices, default=RedirectReason.MANUAL)
