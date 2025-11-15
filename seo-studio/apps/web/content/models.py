@@ -5,6 +5,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from common.models import BaseModel
+from common.managers.site_manager import SiteManager
 from core.models import Site
 
 # --- Taxonomy Models ---
@@ -12,11 +13,16 @@ class Category(BaseModel):
     site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name='categories')
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255)
+
+    objects = SiteManager()
     parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
 
     class Meta:
         verbose_name_plural = "Categories"
         unique_together = ('site', 'slug')
+        indexes = [
+            models.Index(fields=['site', 'slug']),
+        ]
     def __str__(self) -> str: return self.name
 
 class Tag(BaseModel):
@@ -83,8 +89,15 @@ class Post(BaseModel):
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
     scheduled_at = models.DateTimeField(null=True, blank=True, help_text="If set, the post will be published at this time.")
 
+    objects = SiteManager()
+
     class Meta:
         unique_together = ('site', 'slug')
+        indexes = [
+            models.Index(fields=['site', 'status']),
+            models.Index(fields=['site', 'type']),
+            models.Index(fields=['published_at']),
+        ]
 
     def __str__(self) -> str:
         return self.title
@@ -105,6 +118,8 @@ class Redirect301(BaseModel):
     from_path = models.CharField(max_length=2048, db_index=True)
     to_path = models.CharField(max_length=2048)
     reason = models.CharField(max_length=20, choices=RedirectReason.choices, default=RedirectReason.MANUAL)
+
+    objects = SiteManager()
 
     class Meta: unique_together = ('site', 'from_path')
 

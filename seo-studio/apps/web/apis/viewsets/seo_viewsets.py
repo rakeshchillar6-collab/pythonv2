@@ -18,13 +18,12 @@ from publishing.tasks import enqueue_publish_job
 # --- Base ViewSet for Site-scoped resources ---
 class SiteScopedViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
-        # Automatically filter queryset by the user's site.
-        site = Site.objects.filter(organization=self.request.user.organization).first()
-        return self.queryset.filter(site=site)
+        # The custom manager on the model will automatically handle site filtering.
+        return self.queryset.model.objects.from_request(self.request)
 
     def perform_create(self, serializer):
-        site = Site.objects.filter(organization=self.request.user.organization).first()
-        serializer.save(site=site)
+        # The middleware provides the site directly.
+        serializer.save(site=self.request.site)
 
 # --- Schema Builder ---
 class SchemaTemplateViewSet(SiteScopedViewSet):

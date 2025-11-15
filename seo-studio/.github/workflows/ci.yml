@@ -54,13 +54,15 @@ jobs:
         cd seo-studio/apps/web
         poetry install
 
-    - name: Run checks
+    - name: Run Linting & Security Scan
       run: |
         cd seo-studio/apps/web
-        poetry run flake8 .
+        poetry run ruff check .
         poetry run black --check .
+        poetry run mypy .
+        poetry run bandit -r .
 
-    - name: Run tests
+    - name: Run Tests
       env:
         DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
         REDIS_URL: redis://localhost:6379/0
@@ -69,3 +71,7 @@ jobs:
       run: |
         cd seo-studio/apps/web
         poetry run pytest
+
+    - name: Build Docker Images
+      run: |
+        docker compose -f seo-studio/docker-compose.yml build

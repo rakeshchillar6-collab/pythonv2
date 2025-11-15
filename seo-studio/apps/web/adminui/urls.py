@@ -47,4 +47,7 @@ urlpatterns = [
 
     # Metaphorge
     path('metaphorge/', include('adminui.urls.metaphorge_urls')),
+
+    # Operations
+    path('system/', include('adminui.urls.ops_urls')),
 ]

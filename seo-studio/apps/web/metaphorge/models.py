@@ -61,6 +61,10 @@ class MFKeywordRaw(BaseModel):
 
     class Meta:
         unique_together = ('project', 'phrase')
+        indexes = [
+            models.Index(fields=['project', 'phrase']),
+            models.Index(fields=['project', 'depth']),
+        ]
 
 class MFKeywordExpanded(BaseModel):
     project = models.ForeignKey(MFProject, on_delete=models.CASCADE, related_name='expanded_keywords')
@@ -70,6 +74,10 @@ class MFKeywordExpanded(BaseModel):
 
     class Meta:
         unique_together = ('project', 'phrase')
+        indexes = [
+            models.Index(fields=['project', 'phrase']),
+            models.Index(fields=['project', 'depth']),
+        ]
 
 class MFSerpResult(BaseModel):
     project = models.ForeignKey(MFProject, on_delete=models.CASCADE, related_name='serp_results')

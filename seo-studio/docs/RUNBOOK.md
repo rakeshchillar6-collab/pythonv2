@@ -1,86 +1,77 @@
 # SEO Studio Runbook
 
-This document provides guidance for developers and operators on common tasks, workflows, and troubleshooting for the SEO Studio application.
+This document provides guidance for developers and operators on common tasks, workflows, and troubleshooting for the production-ready SEO Studio application.
 
-## Development Workflow
+## Core Architecture
 
-A `Makefile` is provided at the root of the repository to simplify common commands.
+-   **Services:** The system is composed of several key services orchestrated by Docker Compose: `db` (Postgres), `redis`, `web` (Gunicorn/Django), multiple `worker` services for different Celery queues, and a `beat` scheduler.
+-   **Multi-tenancy:** Data is strictly isolated at the application level. A `SiteMiddleware` attaches a `request.site` object to every request, and custom `SiteManager`s on core models ensure all database queries are automatically filtered by `site_id`.
+-   **Asynchronous Tasks:** Celery is used extensively. There are multiple queues to ensure high-priority tasks (e.g., publishing) are not blocked by long-running, low-priority tasks (e.g., SERP collection, embeddings).
+    -   `default`: General, low-volume tasks.
+    -   `embeddings`: For CPU-intensive vector embedding calculations.
+    -   `serp`: For I/O-bound SERP scraping.
+    -   `publishing`: For time-sensitive content publishing jobs.
+    -   `reports`: For potentially long-running analytical queries.
 
-### Starting and Stopping the Environment
+## Common Operations
 
--   **Start all services:** `make up` (runs `docker compose up -d`)
--   **Stop all services:** `make down` (runs `docker compose down`)
--   **View logs:** `make logs` (runs `docker compose logs -f`)
--   **Rebuild containers:** `make build` (runs `docker compose build`)
+### Scaling Services
 
-### Working with the Database
+-   **Web Workers:** To handle more HTTP traffic, scale the `web` service:
+    `docker compose up -d --scale web=3`
+-   **Celery Workers:** To increase throughput for a specific task type, scale the corresponding worker. For example, to add more publishing workers:
+    `docker compose up -d --scale worker_publishing=4`
 
--   **Apply migrations:** `make migrate`
--   **Create new migrations:** After changing models in a Django app, run `make makemigrations <app_name>`. For example: `make makemigrations content`.
--   **Seed data:** `make seed` (runs the `seed_data` management command). This is safe to run multiple times.
+### Secret Rotation
 
-### Running Tests and Linters
+1.  **Update the Secret:** Change the secret value in your secrets management system (e.g., HashiCorp Vault, AWS Secrets Manager).
+2.  **Update Environment:** Update the `.env` file or the environment variables in your container orchestration platform.
+3.  **Restart Services:** Perform a rolling restart of the `web` and `worker` services.
+    `docker compose restart web worker_default worker_embeddings worker_publishing`
 
--   **Run the full test suite:** `make test`
--   **Get a test coverage report:** `make coverage`
--   **Check code style:** `make lint`
+### Database Backup and Restore
 
-### Accessing the Django Shell
+-   **RPO:** 15 minutes. **RTO:** 30 minutes.
+-   **Create a Backup:**
+    `docker compose exec db pg_dump -U <user> -d <dbname> | gzip > backup.sql.gz`
+-   **Restore from Backup:**
+    1.  Stop the web/worker services: `docker compose stop web worker_*`
+    2.  Restore the data: `gunzip < backup.sql.gz | docker compose exec -T db psql -U <user> -d <dbname>`
+    3.  Restart services: `docker compose start web worker_*`
 
-To interact with the Django application directly, you can open a shell inside the `web` container:
+### Managing Celery Queues
 
-```bash
-make shell
-```
+-   **Purge a Queue:** To clear all tasks from a specific queue (e.g., `serp`):
+    `docker compose exec worker_default celery -A seo_studio purge -Q serp`
+-   **Replay Failed Jobs:** (Requires Dead-Letter Queue setup)
+    1.  Inspect jobs in the DLQ.
+    2.  Use a custom management command (`python manage.py replay_failed_jobs --queue=...`) to re-queue them.
 
-From there, you can run `python manage.py ...` commands or open a Django shell with `python manage.py shell_plus`.
+### Rebuilding Indexes
 
-## Architecture Overview
+-   **Vector Indexes:** If embedding models change, you may need to re-index.
+    1.  Open a shell: `make shell`
+    2.  Run the re-embedding task via Django shell or a custom management command.
 
--   **Monorepo Structure:** The project is a monorepo containing the Django backend (`apps/web`), Next.js frontend (`apps/next`), shared packages (`packages/`), and infrastructure configuration (`infra/`).
--   **Services:** The `docker-compose.yml` file orchestrates the following services:
-    -   `db`: PostgreSQL database with the `pgvector` extension.
-    -   `redis`: Message broker for Celery.
-    -   `web`: Gunicorn server for the Django application and Nginx for static files.
-    -   `worker`: Celery worker for running background tasks (e.g., GSC sync, report generation).
-    -   `beat`: Celery beat for scheduling periodic tasks.
-    -   `next`: The Next.js frontend server.
+## Troubleshooting Playbook
 
-## Key Subsystems
+### High API Latency
 
--   **Authentication:** Handled by Django, using `rest_framework_simplejwt` for API authentication with the Next.js frontend.
--   **Admin Panel:** Built with Django templates and **HTMX**. This allows for a dynamic, single-page-application feel without writing extensive JavaScript. Views are in `adminui/views/`, templates in `adminui/templates/`, and URLs in `adminui/urls.py`.
--   **Asynchronous Tasks:** Heavy or long-running operations are offloaded to Celery. This includes:
-    -   Syncing data from integrations (GSC, GA).
-    -   Running alert detection jobs.
-    -   Calculating graph metrics (PageRank).
-    -   Generating reports.
--   **Report Builder:** Uses a custom, secure DSL to generate reports from whitelisted models and fields. The core logic resides in `reports/services/`.
+1.  **Check Metrics:** Look at the "System Health" dashboard. Is `api_p95_latency` high?
+2.  **Check Logs:** Look for slow queries in the structured logs. Use the `request_id` to trace a slow request.
+3.  **Check DB:** Use `EXPLAIN ANALYZE` on the slow query to identify missing indexes or inefficient joins.
+4.  **Check Redis:** Is Redis memory pressure high? Is it slow to respond?
 
-## Troubleshooting
+### Celery Queues are Growing
 
-### `vector` extension not found
+1.  **Check Health Dashboard:** Identify which queue is growing.
+2.  **Check Worker Logs:** Are the workers for that queue healthy? Are they reporting errors?
+3.  **Scale Up:** If workers are healthy but overwhelmed, scale them up (see "Scaling Services").
+4.  **Check Dependencies:** Is the queue blocked by an external service (e.g., SERP API, OpenAI)? Check the Circuit Breaker status if implemented.
 
-If you see an error related to the `vector` extension not being available, it's likely the initial migration failed or was not run.
+### Integration Failures (e.g., GSC, SERP API)
 
-1.  Ensure the `db` container is healthy: `docker compose ps`
-2.  Run the migration command: `make migrate`
-
-The first migration in the `vectorsearch` app (`0001_initial.py`) contains the `CreateExtension("vector")` operation.
-
-### CORS or CSRF Errors
-
--   **CORS:** If the Next.js app reports CORS errors, ensure the `CORS_ALLOWED_ORIGINS` setting in `seo_studio/settings/dev.py` includes the correct frontend URL (default is `http://localhost:3000`).
--   **CSRF:** The API uses JWT for authentication, which is stateless and does not require CSRF protection. The admin panel, however, uses Django's session authentication and is protected. Ensure any `POST` requests from HTMX include the `{% csrf_token %}` in the form.
-
-### Celery Tasks Not Running
-
-1.  **Check Worker/Beat Logs:** Use `make logs` and inspect the output from the `worker` and `beat` services.
-2.  **Check Redis:** Ensure the `redis` container is running and healthy. You can connect to it via the `web` container if needed for debugging (`redis-cli -h redis`).
-3.  **Task Discovery:** Ensure any new tasks have the `@shared_task` decorator and that the module they are in is imported correctly so Celery can discover them.
-
-### Frontend Fails to Connect to API
-
-1.  **Check Network:** Ensure the `web` and `next` containers are on the same Docker network (they are by default).
-2.  **Check Environment Variable:** Verify that `NEXT_PUBLIC_API_URL` in `infra/env/.env` is correctly set to the Django container's address from the perspective of the user's browser (e.g., `http://localhost:8000/api/`).
-3.  **Check API Health:** Access the API's health check endpoint directly in your browser: `http://localhost:8000/api/health/`. It should return a JSON response with `"status": "ok"`.
+1.  **Check Health Monitor:** The "Integrations Health" panel should show the status of external providers.
+2.  **Check Logs:** Look for logs from the relevant integration (e.g., `integrations.services.gsc`, `metaphorge.tasks.serp`).
+3.  **Check Credentials:** Have API keys or tokens expired?
+4.  **Engage Circuit Breaker:** If a provider is down, the Circuit Breaker should trip automatically. You can manually trip it via an ops endpoint if needed.

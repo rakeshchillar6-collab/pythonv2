@@ -1,0 +1,57 @@
+{# adminui/templates/adminui/pages/ops/compliance.html #}
+{% extends "adminui/base.html" %}
+
+{% block title %}System Compliance Matrix{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-semibold text-gray-800 mb-6">System Compliance Matrix</h1>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feature / Studio</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Implemented</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tested</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">UI Built</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for feature, data in report.items %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ feature }}</td>
+                    <td class="px-6 py-4 text-center">
+                        {% if data.implemented %}
+                            <span class="text-green-500">✔</span>
+                        {% else %}
+                            <span class="text-red-500">✖</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        {% if data.tested %}
+                            <span class="text-green-500">✔</span>
+                        {% else %}
+                            <span class="text-red-500">✖</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        {% if data.ui %}
+                            <span class="text-green-500">✔</span>
+                        {% else %}
+                            <span class="text-red-500">✖</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% for note in data.notes %}
+                            <p>{{ note }}</p>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

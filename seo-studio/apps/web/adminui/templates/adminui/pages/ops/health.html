@@ -1,0 +1,60 @@
+{# adminui/templates/adminui/pages/ops/health.html #}
+{% extends "adminui/base.html" %}
+
+{% block title %}System Health & Operations{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-semibold text-gray-800 mb-6">System Health & Operations</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Celery Queues Card -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4">Celery Queue Depths</h2>
+            <div class="space-y-2">
+                {% for queue, depth in queue_depths.items %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600">{{ queue|title }}</span>
+                    <span class="font-mono px-2 py-1 text-sm rounded
+                        {% if depth > 100 %} bg-red-100 text-red-800
+                        {% elif depth > 10 %} bg-yellow-100 text-yellow-800
+                        {% else %} bg-green-100 text-green-800 {% endif %}">
+                        {{ depth }}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-gray-500">Could not retrieve queue depths.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Performance Metrics Card -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4">Key Metrics</h2>
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">API P95 Latency</span>
+                    <span class="font-semibold">{{ metrics.api_p95_latency }} ms</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Job Success Rate</span>
+                    <span class="font-semibold">{{ metrics.job_success_rate }}</span>
+                </div>
+                {# Add more metrics as needed #}
+            </div>
+        </div>
+
+        <!-- Actions Card -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4">Operational Actions</h2>
+            <div class="space-y-3">
+                <button class="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Trigger Site-wide Re-index</button>
+                <button class="w-full bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600">Clear Render Caches</button>
+                <button class="w-full bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">Purge Failed Jobs</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -54,20 +54,40 @@ services:
         condition: service_healthy
     restart: on-failure
 
-  worker:
+  worker_default:
     build:
       context: .
       dockerfile: ./infra/docker/django/Dockerfile
-    container_name: seo_studio_worker
-    command: >
-      sh -c "celery -A seo_studio worker --loglevel=info"
+    command: celery -A seo_studio worker --loglevel=info -Q default -c 2
     volumes:
       - ./seo-studio/apps/web:/app
     env_file:
       - ./infra/env/.env
-    depends_on:
-      web:
-        condition: service_started
+    depends_on: [web]
+    restart: on-failure
+
+  worker_embeddings:
+    build:
+      context: .
+      dockerfile: ./infra/docker/django/Dockerfile
+    command: celery -A seo_studio worker --loglevel=info -Q embeddings -c 1
+    volumes:
+      - ./seo-studio/apps/web:/app
+    env_file:
+      - ./infra/env/.env
+    depends_on: [web]
+    restart: on-failure
+
+  worker_publishing:
+    build:
+      context: .
+      dockerfile: ./infra/docker/django/Dockerfile
+    command: celery -A seo_studio worker --loglevel=info -Q publishing -c 2
+    volumes:
+      - ./seo-studio/apps/web:/app
+    env_file:
+      - ./infra/env/.env
+    depends_on: [web]
     restart: on-failure
 
   next:

@@ -84,6 +84,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 # --- Middleware ---
 MIDDLEWARE = [
+    'core.middleware.RequestIdMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -229,13 +230,18 @@ CELERY_BEAT_SCHEDULE = {
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'request_context': {
+            '()': 'core.logging_filters.RequestContextFilter',
+        },
+    },
     'formatters': {
         'json': {
             '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
-            'format': '%(asctime)s %(levelname)s %(name)s %(module)s %(funcName)s %(lineno)d %(message)s'
+            'format': '%(asctime)s %(levelname)s %(name)s %(request_id)s %(user_id)s %(site_id)s %(message)s'
         },
         'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '{levelname} {asctime} {module} [{request_id}] {message}',
             'style': '{',
         },
     },
@@ -243,6 +249,7 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'json' if not DEBUG else 'verbose',
+            'filters': ['request_context'],
         },
     },
     'root': {
