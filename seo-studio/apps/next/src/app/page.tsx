@@ -1,19 +1,33 @@
-// src/app/page.tsx
-import Link from 'next/link';
+// app/page.tsx
+'use client'; // This page uses hooks, so it must be a client component
+
+import { useTheme } from '@/components/temit/ThemeProvider';
 
 export default function HomePage() {
+  const { theme } = useTheme();
+
+  // Dynamically render the slots defined in the current theme
+  const Header = theme.slots.header;
+  const Hero = theme.slots.hero;
+  const Content = theme.slots.content;
+  const Sidebar = theme.slots.sidebar;
+  const Footer = theme.slots.footer;
+
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md text-center">
-      <h1 className="text-4xl font-bold mb-4">Welcome to Our Blog!</h1>
-      <p className="text-gray-600 mb-6">
-        This is a sample blog built with Django, Next.js, and a lot of love.
-      </p>
-      <Link
-        href="/blog"
-        className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
-      >
-        Explore Blog Posts
-      </Link>
+    <div>
+      <Header />
+      <Hero />
+      <main className="container mx-auto px-4 py-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <Content />
+          </div>
+          <div>
+            <Sidebar />
+          </div>
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 }

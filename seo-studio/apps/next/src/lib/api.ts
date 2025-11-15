@@ -1,50 +1,47 @@
-// src/lib/api.ts
-import axios from 'axios';
+// lib/api.ts
+import { notFound } from 'next/navigation';
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-// You can add interceptors for handling auth tokens here if needed
-// For example:
-// api.interceptors.request.use(config => {
-//   const token = localStorage.getItem('accessToken');
-//   if (token) {
-//     config.headers.Authorization = `Bearer ${token}`;
-//   }
-//   return config;
-// });
-
-// Define types for our data
-export interface Post {
+interface PostRender {
   id: string;
-  title: string;
   slug: string;
-  content: string;
-  excerpt: string;
-  published_at: string;
-  author: string;
+  html: string;
+  meta: Record<string, any>;
+  jsonld: any[];
+  updated_at: string;
 }
 
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
+async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  const url = `${API_URL}${endpoint}`;
+
+  try {
+    const res = await fetch(url, { ...options, headers });
+
+    if (!res.ok) {
+      if (res.status === 404) {
+        notFound();
+      }
+      throw new Error(`Failed to fetch API: ${res.status} ${res.statusText}`);
+    }
+    return res.json();
+  } catch (error) {
+    console.error('API Fetch Error:', error);
+    throw new Error('Failed to fetch from the API.');
+  }
 }
 
-// API functions
-export const getPosts = async (): Promise<PaginatedResponse<Post>> => {
-  const response = await api.get('/posts/');
-  return response.data;
-};
+export async function getPostBySlug(slug: string): Promise<PostRender> {
+  const endpoint = `/content/render/${slug}/`;
+  const options = {
+    next: {
+      revalidate: 60, // Revalidate every 60 seconds
+      tags: [`post:${slug}`],
+    },
+  };
+  return fetchAPI<PostRender>(endpoint, options);
+}
 
-export const getPostBySlug = async (slug: string): Promise<Post> => {
-  const response = await api.get(`/posts/${slug}/`);
-  return response.data;
-};
-
-export default api;
+// Add other fetchers as needed, e.g., for search
+// export async function searchVector(query: string) { ... }
